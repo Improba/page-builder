@@ -1,0 +1,21 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "entryPointStrategy": "resolve",
+  "tsconfig": "tsconfig.typedoc.json",
+  "plugin": ["typedoc-plugin-markdown"],
+  "out": "docs/api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "intentionallyNotExported": [
+    "DragDropApi",
+    "PageBuilderI18nContext",
+    "TranslateOptions",
+    "UseEditorOptions"
+  ],
+  "cleanOutputDir": true,
+  "githubPages": false,
+  "categorizeByGroup": false
+}

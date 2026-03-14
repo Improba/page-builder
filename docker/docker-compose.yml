@@ -1,0 +1,60 @@
+# Docker Compose for @improba/page-builder development
+#
+# Volume strategy:
+#   - The entire project directory is bind-mounted to /app so that source file
+#     changes on the host are reflected immediately inside the container (Vite HMR).
+#   - node_modules is a separate named volume so the container keeps its own copy
+#     of dependencies, avoiding platform mismatches (e.g. native binaries compiled
+#     on the host vs. Alpine Linux inside the container).
+
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/app                  # bind-mount project root for live editing
+      - node_modules:/app/node_modules  # isolated container dependencies
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+    command: npm run dev -- --host 0.0.0.0
+
+  test:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/app
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=test
+    command: npm run test
+
+  build:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ..:/app
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=production
+    command: npm run build
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.58.2-jammy
+    working_dir: /app
+    volumes:
+      - ..:/app
+      - e2e_node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=test
+      - CI=true
+    shm_size: "1gb"
+    command: npm run test:e2e
+
+volumes:
+  node_modules:
+  e2e_node_modules:
