@@ -13,6 +13,9 @@ coverage/
 playwright-report/
 test-results/
 
+# Generated API docs (TypeDoc); run npm run docs:api to regenerate
+docs/api/
+
 *.tsbuildinfo
 
 .DS_Store
