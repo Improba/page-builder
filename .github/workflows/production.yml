@@ -64,5 +64,10 @@ jobs:
       - name: Release safety checks
         run: npm run release:prepare
 
+      # Trusted publishing (OIDC) requires npm 11.5.1+. Ensure workflow filename
+      # on npm package Trusted Publisher settings is exactly: production.yml
+      - name: Use npm required for trusted publishing
+        run: npm install -g npm@latest
+
       - name: Publish to npm
         run: npm publish --access public --provenance --ignore-scripts
