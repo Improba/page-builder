@@ -1,6 +1,6 @@
 {
   "name": "@improba/page-builder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Vue 3 page builder component library — WYSIWYG editor with read/edit modes, custom component registry, and SSR support.",
   "type": "module",
   "main": "./dist/index.cjs",
