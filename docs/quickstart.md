@@ -112,7 +112,7 @@ En mode édition, l’utilisateur peut :
 
 ## 5. Données depuis une API
 
-En pratique, `pageData` vient souvent du backend :
+En pratique, `pageData` vient souvent du backend. Pour une spécification complète des routes et contrats (GET page, save, validation, médias), voir **[Intégration backend](./backend-integration.md)**.
 
 ```ts
 const pageData = ref<IPageData | null>(null);
@@ -159,6 +159,7 @@ Faites cet enregistrement avant le premier rendu (par ex. dans `main.ts` ou un m
 
 ## Suite
 
+- **[Intégration backend](./backend-integration.md)** — Routes, contrats (IPageData, IPageSavePayload), validation, médias
 - **[Architecture](./architecture/overview.md)** — Structure du projet et flux de rendu
 - **[Mode lecture](./features/read-mode.md)** — Rendu, layout, SSR
 - **[Mode édition](./features/edit-mode.md)** — Toolbar, palette, panneau de propriétés
