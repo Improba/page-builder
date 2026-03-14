@@ -6,13 +6,13 @@ Bibliothèque Vue 3 pour construire et afficher des pages à partir d’un arbre
 
 ## Aperçu
 
-**Mode lecture** — Rendu de la page sans interface d’édition (compatible SSR).
-
-![Mode lecture — rendu de la page](./docs/images/read-mode.png)
-
 **Mode édition** — Éditeur WYSIWYG avec palette de composants, panneau de propriétés et prévisualisation responsive.
 
 ![Mode édition — toolbar, palette, canvas, propriétés](./docs/images/edit-mode.png)
+
+**Mode lecture** — Rendu de la page sans interface d’édition (compatible SSR).
+
+![Mode lecture — rendu de la page](./docs/images/read-mode.png)
 
 *Pour régénérer les captures : `docker compose -f docker/docker-compose.yml run --rm e2e sh -lc "npm install && npm run docs:screenshots"`.*
 
@@ -209,6 +209,7 @@ Toute la documentation se trouve dans `docs/` :
 | Document | Description |
 |----------|-------------|
 | **[Quick Start](./docs/quickstart.md)** | Démarrer rapidement : installation, configuration, premier rendu, mode édition, API |
+| **[Intégration backend](./docs/backend-integration.md)** | Routes attendues, contrats (IPageData, IPageSavePayload), validation, médias, sécurité |
 | **[Architecture](./docs/architecture/)** | Vue d’ensemble, schéma JSON, système de composants, pipeline de rendu, architecture du mode édition |
 | **[Fonctionnalités](./docs/features/)** | Mode lecture, mode édition, registre de composants, format JSON |
 | **[Conventions](./docs/conventions/)** | Style de code, workflow git |
