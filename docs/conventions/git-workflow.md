@@ -174,38 +174,56 @@ requesting review.
 
 ## Releases
 
-Releases are automated with GitHub Actions + Release Please.
+Releases are **tag-based**. Pushing a tag of the form `release-vX.Y.Z` triggers the CI to run the quality gate and publish the package to npm.
 
-### Versioning policy (SemVer + Conventional Commits)
+### Tag format
 
-| Commit pattern | Version bump |
-| -------------- | ------------ |
-| `fix:`         | patch        |
-| `feat:`        | minor        |
-| `feat!:` or `BREAKING CHANGE:` | major |
+Tags must follow: **`release-vX.Y.Z`** (e.g. `release-v0.1.0`, `release-v1.2.3`).
 
-### Release workflow
+### Creating a release (script)
 
-1. Merge conventional-commit PRs into `main`.
-2. The `Release` workflow first runs a quality gate:
-   - `npm run release:prepare`
-   - `npm run release:dry-run`
-3. If the gate passes, Release Please opens/updates a release PR that:
-   - bumps `package.json` version,
-   - updates `CHANGELOG.md`,
-   - prepares a release commit.
-4. Merge the release PR to trigger the workflow again; once the same gate passes, Release Please creates the tag and GitHub Release.
-5. The publish job checks out that tag, runs release safety checks, and publishes to npm.
+Use the release script to bump the version, commit, create the tag, and push. From the repo root:
+
+```bash
+# Bump patch (default): 0.1.0 → 0.1.1
+./scripts/release.sh
+# or explicitly:
+./scripts/release.sh patch
+
+# Bump minor: 0.1.1 → 0.2.0
+./scripts/release.sh minor
+
+# Bump major: 0.2.0 → 1.0.0
+./scripts/release.sh major
+```
+
+Or via npm (e.g. in Docker):
+
+```bash
+npm run release -- [major|minor|patch]
+```
+
+**What the script does:**
+
+1. Checks that the working tree is clean.
+2. Bumps the version in `package.json` and `package-lock.json` (major/minor/patch).
+3. Commits with message `chore(release): release-vX.Y.Z`.
+4. Creates the tag `release-vX.Y.Z`.
+5. Pushes the current branch and the tag.
+
+**Requirements:** run from repository root, on the branch you want to release from (typically `main`). Commit or stash any uncommitted changes first.
+
+### What happens after you push the tag
+
+1. The **Release** workflow runs (trigger: push to tag `release-v*`).
+2. **Release quality gate:** checkout tag, `npm ci`, `npm run release:prepare`, `npm run release:dry-run`.
+3. **Publish npm:** (only when the trigger is a tag push) same checks again, then `npm publish` to the public registry (requires `NPM_TOKEN` secret).
+
+Triggering the workflow manually via **workflow_dispatch** runs only the quality gate (useful to verify `main`); it does not publish to npm.
 
 ### Publish safety checks
 
-`prepublishOnly` runs:
-
-```bash
-npm run release:prepare
-```
-
-This includes:
+`prepublishOnly` (and thus `release:prepare`) runs:
 
 - `npm run typecheck`
 - `npm run test`
@@ -218,6 +236,8 @@ This includes:
 - `NPM_TOKEN`: npm automation token with publish permission on `@improba/page-builder`.
 
 ### Local dry run (Docker)
+
+To validate the package without publishing:
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm dev npm run release:prepare

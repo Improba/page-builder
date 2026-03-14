@@ -224,21 +224,21 @@ docker compose -f docker/docker-compose.yml run --rm dev npm run docs:api
 
 ## Releases
 
-Releases are automated via GitHub Actions with [Release Please](https://github.com/googleapis/release-please).
+Releases are **tag-based**. Pushing a tag `release-vX.Y.Z` triggers the GitHub Actions workflow (quality gate + publish to npm).
 
-### Semantic versioning strategy
+### Creating a release
 
-- `fix:` -> patch release
-- `feat:` -> minor release
-- `feat!:` or `BREAKING CHANGE:` -> major release
+From the repo root, run the release script with the desired bump (`patch` is the default):
 
-### Automated release flow
+```bash
+./scripts/release.sh [major|minor|patch]
+# Examples:
+./scripts/release.sh          # 0.1.0 → 0.1.1 (patch)
+./scripts/release.sh minor    # 0.1.1 → 0.2.0
+./scripts/release.sh major    # 0.2.0 → 1.0.0
+```
 
-1. Merge conventional-commit PRs into `main`.
-2. The `Release` workflow runs a quality gate first (`npm run release:prepare` + `npm run release:dry-run`).
-3. If the gate passes, Release Please opens/updates the release PR with version bumps and changelog updates.
-4. Merge the release PR to trigger the workflow again; after the same gate passes, Release Please creates the git tag and GitHub Release.
-5. The publish job checks out the tag, reruns release safety checks, and publishes to npm.
+The script bumps the version in `package.json`, commits, creates the tag `release-vX.Y.Z`, and pushes the branch and tag. The CI then runs the quality gate and publishes to npm. See [Git Workflow — Releases](./docs/conventions/git-workflow.md#releases) for details.
 
 ### Required repository secrets
 
