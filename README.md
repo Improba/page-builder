@@ -244,7 +244,7 @@ The script bumps the version in `package.json`, commits, creates the tag `releas
 
 - `NPM_TOKEN` (npm automation token with publish permission on `@improba/page-builder`)
 
-### Local release verification (Docker)
+### Local release verification and manual publish (Docker)
 
 ```bash
 # Full release safety gate (typecheck + tests + build + types + docs)
@@ -252,7 +252,14 @@ docker compose -f docker/docker-compose.yml run --rm dev npm run release:prepare
 
 # Inspect package contents before publish
 docker compose -f docker/docker-compose.yml run --rm dev npm run release:dry-run
+
+# Publish to npm manually (requires NPM_TOKEN in .env at project root)
+source .env && docker compose -f docker/docker-compose.yml run --rm \
+  -e NPM_TOKEN="$NPM_TOKEN" \
+  dev sh -lc 'printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > /tmp/.npmrc && npm publish --userconfig /tmp/.npmrc --access public'
 ```
+
+See [Git Workflow — Releases](./docs/conventions/git-workflow.md#releases) for the full release process (tag-based CI and manual publish).
 
 ## API Reference
 

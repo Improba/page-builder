@@ -243,3 +243,24 @@ To validate the package without publishing:
 docker compose -f docker/docker-compose.yml run --rm dev npm run release:prepare
 docker compose -f docker/docker-compose.yml run --rm dev npm run release:dry-run
 ```
+
+### Manual publish (without CI)
+
+To publish to npm from your machine without pushing a tag (e.g. first publish or one-off):
+
+1. Put your npm access token (read and write / publish) in a `.env` file at the project root (`.env` is gitignored). Create the token on [npmjs.com](https://www.npmjs.com) → Access Tokens (e.g. Automation, Publish, or granular token with read+write on packages):
+
+   ```
+   NPM_TOKEN=npm_xxxxxxxx
+   ```
+
+2. Run the publish in Docker; the token is passed into the container and written to a temporary `.npmrc` so npm can authenticate:
+
+```bash
+# From project root: load .env and publish (build + tests + publish run inside the container)
+source .env && docker compose -f docker/docker-compose.yml run --rm \
+  -e NPM_TOKEN="$NPM_TOKEN" \
+  dev sh -lc 'printf "//registry.npmjs.org/:_authToken=%s\n" "$NPM_TOKEN" > /tmp/.npmrc && npm publish --userconfig /tmp/.npmrc --access public'
+```
+
+This runs `release:prepare` (typecheck, test, build, types, docs) then publishes. The token in `.env` is only used for the publish step and is not committed.
