@@ -55,6 +55,7 @@ src/
 
 ## Conventions
 
+- **Documentation and comments** — All project documentation (in `docs/`) and source code comments are in **English**.
 - TypeScript strict mode, no `any` unless explicit Vue workaround
 - Vue 3 Composition API with `<script setup lang="ts">`
 - CSS: scoped styles, `ipb-` BEM prefix, CSS custom properties

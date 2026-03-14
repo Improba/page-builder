@@ -1,33 +1,33 @@
-# Intégration backend
+# Backend integration
 
-Ce document décrit comment implémenter le backend pour une application qui utilise `@improba/page-builder`. La bibliothèque est **uniquement frontend** : elle ne définit aucune route ni aucun appel HTTP. C’est à votre backend de fournir la persistance des pages et, optionnellement, des médias.
+This document describes how to implement the backend for an application that uses `@improba/page-builder`. The library is **frontend only**: it does not define any routes or HTTP calls. Your backend must provide page persistence and, optionally, media handling.
 
-## Rôle du backend
+## Backend role
 
-- **Fournir les données de page** — Le frontend appelle une ou plusieurs routes pour obtenir le payload `IPageData` (mode lecture ou édition).
-- **Persister les sauvegardes** — Lorsque l’utilisateur enregistre (bouton Sauvegarder ou Ctrl/Cmd+S), le frontend émet un événement `@save` avec un payload `IPageSavePayload`. L’application hôte doit envoyer ce payload au backend et le backend doit le stocker.
-- **Optionnel : médias** — Les champs image/vidéo/URL sont aujourd’hui saisis en texte (URL). Si vous souhaitez un flux « upload de fichier », c’est à votre app de l’implémenter et de brancher l’événement `@upload` du MediaPicker (voir section Médias).
+- **Provide page data** — The frontend calls one or more routes to get the `IPageData` payload (read or edit mode).
+- **Persist saves** — When the user saves (Save button or Ctrl/Cmd+S), the frontend emits a `@save` event with an `IPageSavePayload`. The host application must send this payload to the backend, and the backend must store it.
+- **Optional: media** — Image/video/URL fields are currently entered as text (URL). If you want an "file upload" flow, your app must implement it and wire the MediaPicker `@upload` event (see Media section).
 
 ---
 
-## Contrat entrant : données de page (GET)
+## Incoming contract: page data (GET)
 
-Le frontend attend un seul type de payload pour afficher ou éditer une page : **`IPageData`**.
+The frontend expects a single payload type to display or edit a page: **`IPageData`**.
 
-### Route recommandée
+### Recommended route
 
-| Méthode | Route (exemple)        | Description                    |
-|--------|-------------------------|--------------------------------|
-| `GET`  | `/api/pages/:id`        | Retourne une page par identifiant. |
+| Method | Route (example)        | Description                    |
+|--------|------------------------|--------------------------------|
+| `GET`  | `/api/pages/:id`       | Returns a page by identifier.  |
 
-L’identifiant `:id` peut être l’`meta.id` de la page (string) ou un identifiant technique (ex. UUID, slug). C’est vous qui définissez la convention.
+The `:id` parameter can be the page's `meta.id` (string) or a technical identifier (e.g. UUID, slug). You define the convention.
 
-### Réponse attendue
+### Expected response
 
-- **Content-Type** : `application/json`
-- **Corps** : un objet JSON conforme à `IPageData`.
+- **Content-Type**: `application/json`
+- **Body**: a JSON object conforming to `IPageData`.
 
-Structure TypeScript (référence) :
+TypeScript structure (reference):
 
 ```ts
 interface IPageData {
@@ -57,19 +57,19 @@ interface INode {
 }
 ```
 
-- **meta** : métadonnées de la page (identifiant, nom, URL, statut, dates). Non modifiées par l’éditeur ; le backend les gère.
-- **content** : racine de l’arbre de contenu éditable. Le nœud racine doit avoir `slot: null`.
-- **layout** : racine de l’arbre de layout (enveloppe le contenu). Souvent un seul nœud (ex. `PbContainer`) avec `children` vides ou contenant un placeholder pour le contenu. Peut être marqué `readonly: true`.
-- **maxId** : plus grand `id` de nœud présent dans l’arbre. **Obligatoire** pour que l’éditeur génère des IDs uniques lors de l’ajout de composants. Doit être cohérent avec les `id` des nœuds (≥ à tous les `id` du tree).
-- **variables** : map clé/valeur (string/string) injectée dans les props au rendu (remplacement de `{{ VAR }}`). Non envoyée lors du save ; le backend les conserve et les renvoie à chaque GET.
+- **meta**: Page metadata (identifier, name, URL, status, dates). Not edited by the editor; the backend manages it.
+- **content**: Root of the editable content tree. The root node must have `slot: null`.
+- **layout**: Root of the layout tree (wraps the content). Often a single node (e.g. `PbContainer`) with empty `children` or a content placeholder. May be marked `readonly: true`.
+- **maxId**: Highest node `id` in the tree. **Required** so the editor can generate unique IDs when adding components. Must be consistent with node `id`s (≥ all tree `id`s).
+- **variables**: Key/value map (string/string) injected into props at render time (replacement of `{{ VAR }}`). Not sent on save; the backend keeps and returns them on each GET.
 
-### Exemple de réponse GET
+### Example GET response
 
 ```json
 {
   "meta": {
     "id": "page-001",
-    "name": "Accueil",
+    "name": "Home",
     "url": "/",
     "status": "published",
     "updatedAt": "2026-03-10T14:30:00Z",
@@ -91,7 +91,7 @@ interface INode {
             "id": 3,
             "name": "PbText",
             "slot": "default",
-            "props": { "content": "<h1>Bienvenue</h1>", "tag": "div" },
+            "props": { "content": "<h1>Welcome</h1>", "tag": "div" },
             "children": []
           }
         ]
@@ -113,46 +113,46 @@ interface INode {
 }
 ```
 
-### Côté frontend (exemple)
+### Frontend example
 
 ```ts
-const pageId = 'page-001'; // ou depuis la route /pages/:id
+const pageId = 'page-001'; // or from route /pages/:id
 const res = await fetch(`/api/pages/${pageId}`);
 if (!res.ok) throw new Error('Page not found');
 const pageData: IPageData = await res.json();
 ```
 
-- En **mode lecture** : utilisez `pageData` avec `<PageBuilder :page-data="pageData" mode="read" />`.
-- En **mode édition** : utilisez le même `pageData` avec `mode="edit"` et gérez `@save` (voir ci‑dessous).
+- In **read mode**: use `pageData` with `<PageBuilder :page-data="pageData" mode="read" />`.
+- In **edit mode**: use the same `pageData` with `mode="edit"` and handle `@save` (see below).
 
 ---
 
-## Contrat sortant : sauvegarde (PUT / PATCH)
+## Outgoing contract: save (PUT / PATCH)
 
-Quand l’utilisateur sauvegarde, le composant émet un événement **`save`** avec un payload **`IPageSavePayload`**. Seules les parties modifiables sont envoyées ; `meta` et `variables` restent côté backend.
+When the user saves, the component emits a **`save`** event with an **`IPageSavePayload`**. Only the editable parts are sent; `meta` and `variables` stay on the backend.
 
-### Payload émis par le frontend
+### Payload emitted by the frontend
 
 ```ts
 interface IPageSavePayload {
-  content: INode;   // Arbre de contenu mis à jour
-  layout: INode;    // Arbre de layout mis à jour
-  maxId: number;   // Nouveau maxId (à persister pour les prochains ajouts de nœuds)
+  content: INode;   // Updated content tree
+  layout: INode;    // Updated layout tree
+  maxId: number;   // New maxId (persist for future node additions)
 }
 ```
 
-### Route recommandée
+### Recommended route
 
-| Méthode   | Route (exemple)     | Description                          |
-|-----------|---------------------|--------------------------------------|
-| `PUT`     | `/api/pages/:id`    | Remplace la page (ou seulement content/layout/maxId). |
-| `PATCH`   | `/api/pages/:id`    | Met à jour partiellement (content, layout, maxId).     |
+| Method   | Route (example)     | Description                                          |
+|----------|---------------------|------------------------------------------------------|
+| `PUT`    | `/api/pages/:id`    | Replace the page (or only content/layout/maxId).   |
+| `PATCH`  | `/api/pages/:id`    | Partial update (content, layout, maxId).           |
 
-Convention courante : **PUT** pour « remplacer toute la ressource page » (en fusionnant vous‑même `meta` et `variables`), **PATCH** pour « mettre à jour uniquement content, layout et maxId ».
+Common convention: **PUT** for "replace the whole page resource" (merging `meta` and `variables` yourself), **PATCH** for "update only content, layout, and maxId".
 
-### Corps de la requête (exemple)
+### Request body (example)
 
-Le frontend envoie typiquement le `IPageSavePayload` en JSON :
+The frontend typically sends `IPageSavePayload` as JSON:
 
 ```json
 {
@@ -162,17 +162,17 @@ Le frontend envoie typiquement le `IPageSavePayload` en JSON :
 }
 ```
 
-### Comportement attendu côté backend
+### Expected backend behavior
 
-1. **Identifier la page** via `:id` (correspondant à `meta.id` ou à votre clé métier).
-2. **Fusionner** les champs reçus avec les données existantes :
-   - Remplacer `content`, `layout` et `maxId` par les valeurs du payload.
-   - **Ne pas** écraser `meta` ni `variables` avec le payload de save (ils n’y figurent pas).
-3. **Persister** (base de données, fichier, etc.).
-4. **Mettre à jour** `meta.updatedAt` si vous l’utilisez.
-5. Répondre avec un **204 No Content** ou **200 OK** (éventuellement avec la page complète en corps si votre client la réutilise).
+1. **Identify the page** via `:id` (matching `meta.id` or your business key).
+2. **Merge** received fields with existing data:
+   - Replace `content`, `layout`, and `maxId` with payload values.
+   - **Do not** overwrite `meta` or `variables` with the save payload (they are not included).
+3. **Persist** (database, file, etc.).
+4. **Update** `meta.updatedAt` if you use it.
+5. Respond with **204 No Content** or **200 OK** (optionally with the full page in the body if your client reuses it).
 
-### Côté frontend (exemple)
+### Frontend example
 
 ```vue
 <PageBuilder
@@ -193,25 +193,25 @@ async function onSave(payload: IPageSavePayload) {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error('Save failed');
-  // Optionnel : mettre à jour pageData avec la réponse si le backend renvoie IPageData
+  // Optional: update pageData with response if backend returns IPageData
 }
 ```
 
 ---
 
-## Validation côté backend
+## Backend validation
 
-La bibliothèque exporte deux fonctions de validation que vous pouvez réutiliser côté serveur si vous exécutez du JavaScript/TypeScript :
+The library exports two validation functions you can reuse on the server if you run JavaScript/TypeScript:
 
-- **`validatePageData(pageData: unknown): IValidationResult`** — Valide un objet complet `IPageData` (meta, content, layout, maxId, variables, structure des nœuds).
-- **`validateNode(node: unknown, path?: string): IValidationResult`** — Valide un seul nœud (utile pour valider `content` ou `layout` isolément).
+- **`validatePageData(pageData: unknown): IValidationResult`** — Validates a full `IPageData` object (meta, content, layout, maxId, variables, node structure).
+- **`validateNode(node: unknown, path?: string): IValidationResult`** — Validates a single node (useful for validating `content` or `layout` in isolation).
 
-Recommandations :
+Recommendations:
 
-1. **À la réception d’un GET** : avant d’envoyer une page au client, valider (ou au moins vérifier) que le payload stocké est un `IPageData` valide, pour éviter d’envoyer des données incohérentes.
-2. **À la réception d’un save (PUT/PATCH)** : valider le payload reçu (par ex. `content` et `layout` avec `validateNode`, et que `maxId` est un entier ≥ max des `id` présents). En cas d’erreur, renvoyer **400 Bad Request** avec un corps décrivant les erreurs (la propriété `errors` de `IValidationResult` a la forme `{ path, message }[]`).
+1. **On GET**: Before sending a page to the client, validate (or at least verify) that the stored payload is valid `IPageData`, to avoid sending inconsistent data.
+2. **On save (PUT/PATCH)**: Validate the received payload (e.g. `content` and `layout` with `validateNode`, and that `maxId` is an integer ≥ max of all `id`s present). On error, return **400 Bad Request** with a body describing the errors (the `errors` property of `IValidationResult` has the form `{ path, message }[]`).
 
-Exemple de structure d’erreur :
+Example error structure:
 
 ```json
 {
@@ -222,86 +222,86 @@ Exemple de structure d’erreur :
 }
 ```
 
-Si vous n’utilisez pas JavaScript/TypeScript au backend, vous devrez réimplémenter les mêmes règles à partir de la doc (voir [JSON Schema](./architecture/json-schema.md), [Format JSON](./features/json-format.md)) et des implémentations de `validatePageData` / `validateNode` dans le code source.
+If you do not use JavaScript/TypeScript on the backend, you must reimplement the same rules from the docs (see [JSON Schema](./architecture/json-schema.md), [JSON format](./features/json-format.md)) and from the `validatePageData` / `validateNode` implementations in the source.
 
 ---
 
-## Règles métier à respecter côté backend
+## Business rules for the backend
 
-Lors de la **construction ou mise à jour** d’un `IPageData` (côté backend) :
+When **building or updating** `IPageData` (on the backend):
 
-1. **IDs uniques** — Chaque nœud doit avoir un `id` numérique unique dans toute la page. En pratique : entiers séquentiels, et `maxId` = maximum de tous les `id`.
-2. **Racines** — Les nœuds racine `content` et `layout` doivent avoir `slot: null`.
-3. **Slot par défaut** — Les enfants qui vont dans le slot par défaut doivent avoir `slot: "default"`.
-4. **Enfants** — Les nœuds feuille doivent avoir `children: []` (tableau vide, pas d’omission).
-5. **Variables** — Clés en UPPER_SNAKE_CASE par convention ; valeurs string uniquement.
-6. **readonly** — Mettre `readonly: true` sur les nœuds de layout que l’utilisateur ne doit pas modifier (ex. conteneur global).
+1. **Unique IDs** — Each node must have a unique numeric `id` within the page. In practice: sequential integers, and `maxId` = maximum of all `id`s.
+2. **Roots** — The `content` and `layout` root nodes must have `slot: null`.
+3. **Default slot** — Children that go in the default slot must have `slot: "default"`.
+4. **Children** — Leaf nodes must have `children: []` (empty array, not omitted).
+5. **Variables** — Keys in UPPER_SNAKE_CASE by convention; values must be strings only.
+6. **readonly** — Set `readonly: true` on layout nodes that the user must not edit (e.g. global container).
 
-Détails et exemples : [Format JSON](./features/json-format.md#backend-formatting-guidelines).
-
----
-
-## Médias (images, vidéos, URLs)
-
-Aujourd’hui, les champs de type image/URL dans les composants intégrés (PbImage, PbVideo, etc.) sont saisis comme **URL texte**. Le composant **MediaPicker** fournit :
-
-- Un champ pour coller/saisir une URL.
-- Un bouton « Upload » qui **émet uniquement un événement `upload`** — la bibliothèque n’appelle aucune API.
-
-Pour proposer un vrai flux d’upload :
-
-1. Dans votre application, interceptez l’événement `@upload` (si vous utilisez un prop editor personnalisé qui wrap le MediaPicker) ou fournissez un mécanisme (sélecteur de fichier, drag & drop) qui appelle **votre** endpoint d’upload.
-2. Votre backend expose par exemple :
-   - **POST** `/api/media` (ou `/api/pages/:id/media`) : envoi de fichier, retourne une URL publique (ou un chemin) à stocker dans les props du nœud.
-3. Une fois l’URL obtenue, mettez-la dans la prop correspondante (ex. `src`) du nœud ; le flux d’édition existant et le save enverront cette valeur dans `IPageSavePayload`.
-
-Aucune route ni aucun format de body ne sont imposés par la bibliothèque pour l’upload.
+Details and examples: [JSON format](./features/json-format.md#backend-formatting-guidelines).
 
 ---
 
-## Sécurité
+## Media (images, videos, URLs)
 
-- **Frontend** : la lib sanitize HTML (richtext) et les URLs (liens, médias, arrière-plans) avant affichage. Ne pas désactiver ces contrôles en production.
-- **Backend** : vous devez aussi valider et, si besoin, sanitizer les données reçues (save). En particulier :
-  - Valider la structure (IDs uniques, noms de composants autorisés, types de props).
-  - Pour le HTML dans les props (ex. `content` de PbText), appliquer une politique de contenu sûr (allowlist de balises/attributs) ou stocker du texte brut et laisser le frontend appliquer un rendu sécurisé.
-  - Vérifier les URLs (schemes autorisés, pas de javascript:, etc.) pour les champs image/vidéo/lien.
+Currently, image/URL fields in built-in components (PbImage, PbVideo, etc.) are entered as **text URLs**. The **MediaPicker** component provides:
 
----
+- A field to paste/enter a URL.
+- An "Upload" button that **only emits an `upload` event** — the library does not call any API.
 
-## Codes HTTP et erreurs
+To offer a real upload flow:
 
-| Code        | Usage recommandé |
-|------------|-------------------|
-| **200 OK** | GET page : retourner le corps `IPageData`. Optionnellement PUT/PATCH si vous renvoyez la page mise à jour. |
-| **204 No Content** | PUT/PATCH save réussi sans corps. |
-| **400 Bad Request** | Payload de save invalide (validation échouée). Corps : message + détails (ex. liste d’erreurs de validation). |
-| **404 Not Found** | Page inexistante pour GET ou PUT/PATCH sur `:id` inconnu. |
-| **409 Conflict** | Optionnel : conflit de version si vous faites du versioning optimiste. |
-| **500 Internal Server Error** | Erreur serveur (à éviter d’exposer des détails sensibles au client). |
+1. In your application, intercept the `@upload` event (if you use a custom prop editor that wraps MediaPicker) or provide a mechanism (file picker, drag & drop) that calls **your** upload endpoint.
+2. Your backend exposes for example:
+   - **POST** `/api/media` (or `/api/pages/:id/media`): file upload, returns a public URL (or path) to store in the node props.
+3. Once you have the URL, set it on the corresponding prop (e.g. `src`) of the node; the existing edit flow and save will send this value in `IPageSavePayload`.
+
+No route or body format is imposed by the library for upload.
 
 ---
 
-## Résumé des routes attendues
+## Security
 
-La bibliothèque **n’impose** aucune URL. Voici un résumé des routes que votre backend doit **au minimum** exposer pour une intégration complète :
-
-| Méthode | Route (exemple)   | Body (requête)     | Réponse (succès)   |
-|--------|--------------------|--------------------|--------------------|
-| **GET**  | `/api/pages/:id`   | —                  | `200` + `IPageData` (JSON) |
-| **PUT** ou **PATCH** | `/api/pages/:id` | `IPageSavePayload` (JSON) | `200` + optionnel body ou `204` |
-
-Optionnel (médias) :
-
-| Méthode | Route (exemple)   | Description |
-|--------|--------------------|-------------|
-| **POST** | `/api/media` ou `/api/pages/:id/media` | Upload de fichier ; retourne l’URL à stocker dans les props. |
+- **Frontend**: the library sanitizes HTML (richtext) and URLs (links, media, backgrounds) before display. Do not disable these checks in production.
+- **Backend**: you must also validate and, if needed, sanitize received data (save). In particular:
+  - Validate structure (unique IDs, allowed component names, prop types).
+  - For HTML in props (e.g. PbText `content`), apply a safe content policy (allowlist of tags/attributes) or store plain text and let the frontend apply safe rendering.
+  - Validate URLs (allowed schemes, no javascript:, etc.) for image/video/link fields.
 
 ---
 
-## Références
+## HTTP codes and errors
 
-- **[Format JSON](./features/json-format.md)** — Détail de `INode`, `IPageData`, variables, payload de save.
-- **[JSON Schema (architecture)](./architecture/json-schema.md)** — Contraintes et bonnes pratiques sur les structures.
-- **[Quick Start](./quickstart.md)** — Exemple de chargement de page depuis une API et gestion de `@save`.
-- **Types et validation** : exportés depuis `@improba/page-builder` (`IPageData`, `IPageSavePayload`, `validatePageData`, `validateNode`). Voir la [référence API](./api/README.md).
+| Code        | Recommended use |
+|------------|-----------------|
+| **200 OK** | GET page: return `IPageData` body. Optionally PUT/PATCH if you return the updated page. |
+| **204 No Content** | PUT/PATCH save success with no body. |
+| **400 Bad Request** | Invalid save payload (validation failed). Body: message + details (e.g. validation error list). |
+| **404 Not Found** | Page does not exist for GET or PUT/PATCH on unknown `:id`. |
+| **409 Conflict** | Optional: version conflict if you use optimistic versioning. |
+| **500 Internal Server Error** | Server error (avoid exposing sensitive details to the client). |
+
+---
+
+## Summary of expected routes
+
+The library **does not impose** any URL. Here is a summary of the routes your backend should expose **at minimum** for full integration:
+
+| Method | Route (example)   | Request body     | Success response   |
+|--------|-------------------|------------------|--------------------|
+| **GET**  | `/api/pages/:id`   | —                | `200` + `IPageData` (JSON) |
+| **PUT** or **PATCH** | `/api/pages/:id` | `IPageSavePayload` (JSON) | `200` + optional body or `204` |
+
+Optional (media):
+
+| Method | Route (example)   | Description |
+|--------|------------------|-------------|
+| **POST** | `/api/media` or `/api/pages/:id/media` | File upload; returns URL to store in props. |
+
+---
+
+## References
+
+- **[JSON format](./features/json-format.md)** — Detail of `INode`, `IPageData`, variables, save payload.
+- **[JSON Schema (architecture)](./architecture/json-schema.md)** — Constraints and best practices on structures.
+- **[Quick Start](./quickstart.md)** — Example of loading a page from an API and handling `@save`.
+- **Types and validation**: exported from `@improba/page-builder` (`IPageData`, `IPageSavePayload`, `validatePageData`, `validateNode`). See the [API reference](./api/README.md).

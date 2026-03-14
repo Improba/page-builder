@@ -1,33 +1,33 @@
 # @improba/page-builder
 
-Bibliothèque Vue 3 pour construire et afficher des pages à partir d’un arbre JSON. Elle fournit un **mode lecture** (rendu statique, compatible SSR) et un **mode édition** (éditeur WYSIWYG avec palette de composants, panneau de propriétés, glisser-déposer, undo/redo). Le backend envoie un seul contrat JSON (`IPageData`) ; le frontend le rend et, en mode édition, permet de le modifier visuellement.
+Vue 3 library for building and rendering pages from a JSON tree. It provides **read mode** (static rendering, SSR-compatible) and **edit mode** (WYSIWYG editor with component palette, property panel, drag-and-drop, undo/redo). The backend sends a single JSON contract (`IPageData`); the frontend renders it and, in edit mode, allows visual editing.
 
-**En bref :** installez le plugin Vue, fournissez des données `IPageData`, et utilisez `<PageBuilder>` en `mode="read"` pour l’affichage ou `mode="edit"` pour l’édition. Vous pouvez enregistrer vos propres composants (hero, cartes, etc.) et les utiliser comme blocs dans l’arbre.
+**In short:** install the Vue plugin, provide `IPageData`, and use `<PageBuilder>` with `mode="read"` for display or `mode="edit"` for editing. You can register your own components (hero, cards, etc.) and use them as blocks in the tree.
 
-## Aperçu
+## Overview
 
-**Mode édition** — Éditeur WYSIWYG avec palette de composants, panneau de propriétés et prévisualisation responsive.
+**Edit mode** — WYSIWYG editor with component palette, property panel, and responsive preview.
 
-![Mode édition — toolbar, palette, canvas, propriétés](./docs/images/edit-mode.png)
+![Edit mode — toolbar, palette, canvas, properties](./docs/images/edit-mode.png)
 
-**Mode lecture** — Rendu de la page sans interface d’édition (compatible SSR).
+**Read mode** — Page rendering without editor UI (SSR-compatible).
 
-![Mode lecture — rendu de la page](./docs/images/read-mode.png)
+![Read mode — page rendering](./docs/images/read-mode.png)
 
-*Pour régénérer les captures : `docker compose -f docker/docker-compose.yml run --rm e2e sh -lc "npm install && npm run docs:screenshots"`.*
+*To regenerate screenshots: `docker compose -f docker/docker-compose.yml run --rm e2e sh -lc "npm install && npm run docs:screenshots"`.*
 
-## Fonctionnalités
+## Features
 
-- **Mode lecture** — Rendu du contenu à partir d’un arbre JSON, compatible SSR. Intégrable dans Nuxt ou toute app Vue 3.
-- **Mode édition** — Éditeur WYSIWYG avec palette de composants, panneau de propriétés, glisser-déposer, undo/redo et prévisualisation responsive (desktop / tablette / mobile).
-- **Registre de composants** — Enregistrement de composants Vue personnalisés (props typées, slots, métadonnées d’édition). Livré avec des composants de mise en page et de contenu (PbColumn, PbRow, PbText, PbImage, etc.).
-- **Contrat JSON unique** — Le backend envoie un seul payload `IPageData` ; le frontend le rend et l’édite. Séparation claire des responsabilités.
+- **Read mode** — Renders content from a JSON tree, SSR-compatible. Integrable with Nuxt or any Vue 3 app.
+- **Edit mode** — WYSIWYG editor with component palette, property panel, drag-and-drop, undo/redo, and responsive preview (desktop / tablet / mobile).
+- **Component registry** — Register custom Vue components (typed props, slots, edit metadata). Ships with layout and content components (PbColumn, PbRow, PbText, PbImage, etc.).
+- **Single JSON contract** — Backend sends one `IPageData` payload; frontend renders and edits it. Clear separation of concerns.
 
-## Démarrage rapide
+## Quick Start
 
-Pour un guide pas à pas (installation, premier rendu, mode édition, composants personnalisés), voir **[Quick Start](./docs/quickstart.md)**.
+For a step-by-step guide (installation, first render, edit mode, custom components), see **[Quick Start](./docs/quickstart.md)**.
 
-Résumé minimal :
+Minimal summary:
 
 ### Installation
 
@@ -204,19 +204,19 @@ docker compose -f docker/docker-compose.yml run --rm e2e npm run e2e:install
 
 ## Documentation
 
-Toute la documentation se trouve dans `docs/` :
+All documentation lives in `docs/`:
 
 | Document | Description |
 |----------|-------------|
-| **[Quick Start](./docs/quickstart.md)** | Démarrer rapidement : installation, configuration, premier rendu, mode édition, API |
-| **[Intégration backend](./docs/backend-integration.md)** | Routes attendues, contrats (IPageData, IPageSavePayload), validation, médias, sécurité |
-| **[Architecture](./docs/architecture/)** | Vue d’ensemble, schéma JSON, système de composants, pipeline de rendu, architecture du mode édition |
-| **[Fonctionnalités](./docs/features/)** | Mode lecture, mode édition, registre de composants, format JSON |
-| **[Conventions](./docs/conventions/)** | Style de code, workflow git |
-| **[Roadmap](./docs/plans/roadmap.md)** | Phases et jalons |
-| **[Référence API](./docs/api/)** | Sortie TypeDoc (types et fonctions publics) |
+| **[Quick Start](./docs/quickstart.md)** | Get started: installation, setup, first render, edit mode, API |
+| **[Backend integration](./docs/backend-integration.md)** | Expected routes, contracts (IPageData, IPageSavePayload), validation, media, security |
+| **[Architecture](./docs/architecture/)** | Overview, JSON schema, component system, rendering pipeline, edit mode architecture |
+| **[Features](./docs/features/)** | Read mode, edit mode, component registry, JSON format |
+| **[Conventions](./docs/conventions/)** | Code style, git workflow |
+| **[Roadmap](./docs/plans/roadmap.md)** | Phases and milestones |
+| **[API reference](./docs/api/)** | TypeDoc output (public types and functions) |
 
-Pour régénérer la référence API :
+To regenerate the API reference:
 
 ```bash
 docker compose -f docker/docker-compose.yml run --rm dev npm run docs:api

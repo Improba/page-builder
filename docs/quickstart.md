@@ -1,8 +1,8 @@
 # Quick Start
 
-Ce guide permet de démarrer rapidement avec `@improba/page-builder` dans une application Vue 3.
+This guide helps you get started quickly with `@improba/page-builder` in a Vue 3 application.
 
-## Prérequis
+## Prerequisites
 
 - **Node.js** ≥ 22
 - **Vue** ^3.4
@@ -13,9 +13,9 @@ Ce guide permet de démarrer rapidement avec `@improba/page-builder` dans une ap
 npm install @improba/page-builder
 ```
 
-## 2. Configuration du plugin
+## 2. Plugin setup
 
-Dans le point d’entrée de votre app (par ex. `main.ts`) :
+In your app entry point (e.g. `main.ts`):
 
 ```ts
 import { createApp } from 'vue';
@@ -28,19 +28,19 @@ app.use(PageBuilderPlugin);
 app.mount('#app');
 ```
 
-Options du plugin (optionnel) :
+Optional plugin options:
 
 ```ts
 app.use(PageBuilderPlugin, {
-  registerBuiltIn: true,   // Composants intégrés (PbColumn, PbRow, etc.)
-  components: [],          // Définitions de composants personnalisés
+  registerBuiltIn: true,   // Built-in components (PbColumn, PbRow, etc.)
+  components: [],          // Custom component definitions
   globalName: 'PageBuilder',
 });
 ```
 
-## 3. Afficher une page (mode lecture)
+## 3. Display a page (read mode)
 
-Utilisez le composant `<PageBuilder>` avec un objet `IPageData` et `mode="read"` :
+Use the `<PageBuilder>` component with an `IPageData` object and `mode="read"`:
 
 ```vue
 <script setup lang="ts">
@@ -48,7 +48,7 @@ import { PageBuilder } from '@improba/page-builder';
 import type { IPageData } from '@improba/page-builder';
 
 const pageData: IPageData = {
-  meta: { id: '1', name: 'Accueil', url: '/', status: 'published' },
+  meta: { id: '1', name: 'Home', url: '/', status: 'published' },
   content: {
     id: 0,
     name: 'PbColumn',
@@ -59,7 +59,7 @@ const pageData: IPageData = {
         id: 1,
         name: 'PbText',
         slot: 'default',
-        props: { content: '<h1>Bienvenue</h1><p>Première page.</p>' },
+        props: { content: '<h1>Welcome</h1><p>First page.</p>' },
         children: [],
       },
     ],
@@ -75,11 +75,11 @@ const pageData: IPageData = {
 </template>
 ```
 
-Le **mode lecture** affiche la page de façon statique, sans interface d’édition. Il est compatible SSR (Nuxt, etc.).
+**Read mode** displays the page statically, with no editor UI. It is SSR-compatible (Nuxt, etc.).
 
-## 4. Activer l’édition (mode édition)
+## 4. Enable editing (edit mode)
 
-Pour un éditeur WYSIWYG avec palette de composants, panneau de propriétés et undo/redo :
+For a WYSIWYG editor with component palette, property panel, and undo/redo:
 
 ```vue
 <template>
@@ -93,26 +93,26 @@ Pour un éditeur WYSIWYG avec palette de composants, panneau de propriétés et 
 
 <script setup lang="ts">
 function onSave(payload: IPageSavePayload) {
-  // Envoyer payload.content, payload.maxId au backend
+  // Send payload.content, payload.maxId to the backend
 }
 
 function onChange() {
-  // Optionnel : réagir aux modifications (ex. indicateur "non enregistré")
+  // Optional: react to changes (e.g. "unsaved" indicator)
 }
 </script>
 ```
 
-En mode édition, l’utilisateur peut :
+In edit mode, the user can:
 
-- Glisser-déposer des composants depuis la palette
-- Sélectionner un nœud et modifier ses props dans le panneau droit
-- Annuler / rétablir
-- Prévisualiser desktop / tablette / mobile
-- Enregistrer via le bouton Sauvegarder (événement `@save`)
+- Drag and drop components from the palette
+- Select a node and edit its props in the right panel
+- Undo / redo
+- Preview desktop / tablet / mobile
+- Save via the Save button (`@save` event)
 
-## 5. Données depuis une API
+## 5. Data from an API
 
-En pratique, `pageData` vient souvent du backend. Pour une spécification complète des routes et contrats (GET page, save, validation, médias), voir **[Intégration backend](./backend-integration.md)**.
+In practice, `pageData` often comes from the backend. For a full specification of routes and contracts (GET page, save, validation, media), see **[Backend integration](./backend-integration.md)**.
 
 ```ts
 const pageData = ref<IPageData | null>(null);
@@ -129,40 +129,40 @@ onMounted(async () => {
 </template>
 ```
 
-## 6. Composants personnalisés (optionnel)
+## 6. Custom components (optional)
 
-Pour enregistrer vos propres blocs (hero, carte, etc.) :
+To register your own blocks (hero, card, etc.):
 
 ```ts
 import { registerComponent } from '@improba/page-builder';
 import type { IComponentDefinition } from '@improba/page-builder';
-import MonHero from './MonHero.vue';
+import MyHero from './MyHero.vue';
 
 const def: IComponentDefinition = {
-  name: 'MonHero',
-  label: 'Bandeau Hero',
-  description: 'Section hero avec titre et CTA.',
+  name: 'MyHero',
+  label: 'Hero Banner',
+  description: 'Hero section with title and CTA.',
   category: 'content',
-  component: MonHero,
-  slots: [{ name: 'default', label: 'Contenu' }],
+  component: MyHero,
+  slots: [{ name: 'default', label: 'Content' }],
   editableProps: [
-    { key: 'titre', label: 'Titre', type: 'text', required: true },
+    { key: 'title', label: 'Title', type: 'text', required: true },
     { key: 'image', label: 'Image', type: 'image' },
   ],
-  defaultProps: { titre: 'Titre' },
+  defaultProps: { title: 'Title' },
 };
 
 registerComponent(def);
 ```
 
-Faites cet enregistrement avant le premier rendu (par ex. dans `main.ts` ou un module dédié).
+Do this registration before the first render (e.g. in `main.ts` or a dedicated module).
 
-## Suite
+## Next steps
 
-- **[Intégration backend](./backend-integration.md)** — Routes, contrats (IPageData, IPageSavePayload), validation, médias
-- **[Architecture](./architecture/overview.md)** — Structure du projet et flux de rendu
-- **[Mode lecture](./features/read-mode.md)** — Rendu, layout, SSR
-- **[Mode édition](./features/edit-mode.md)** — Toolbar, palette, panneau de propriétés
-- **[Format JSON](./features/json-format.md)** — `INode`, `IPageData`, variables
-- **[Registre de composants](./features/component-registry.md)** — Enregistrement et métadonnées
-- **[Référence API](./api/README.md)** — Types et fonctions exposées
+- **[Backend integration](./backend-integration.md)** — Routes, contracts (IPageData, IPageSavePayload), validation, media
+- **[Architecture](./architecture/overview.md)** — Project structure and rendering flow
+- **[Read mode](./features/read-mode.md)** — Rendering, layout, SSR
+- **[Edit mode](./features/edit-mode.md)** — Toolbar, palette, property panel
+- **[JSON format](./features/json-format.md)** — `INode`, `IPageData`, variables
+- **[Component registry](./features/component-registry.md)** — Registration and metadata
+- **[API reference](./api/README.md)** — Exposed types and functions
