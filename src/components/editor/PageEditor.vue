@@ -346,6 +346,7 @@
 
       <IframeCanvas
         :content="pb.content.value"
+        :layout="pb.layout.value"
         :variables="pb.variables.value"
         :selected-node-id="editor.selectedNodeId.value"
         :hovered-node-id="editor.hoveredNodeId.value"

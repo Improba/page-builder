@@ -12,6 +12,11 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./core": {
+      "types": "./dist/types/core/index.d.ts",
+      "import": "./dist/core.js",
+      "require": "./dist/core.cjs"
+    },
     "./style.css": "./dist/style.css"
   },
   "files": [
@@ -25,7 +30,7 @@
   "scripts": {
     "dev": "vite serve playground",
     "build": "vite build",
-    "build:types": "vue-tsc --declaration --emitDeclarationOnly --outDir dist/types",
+    "build:types": "vue-tsc -p tsconfig.build.json",
     "docs:api": "typedoc --options typedoc.json",
     "docs:api:clean": "rm -rf docs/api && npm run docs:api",
     "docs:screenshots": "playwright test tests/e2e/capture-screenshots.spec.ts",

@@ -33,6 +33,7 @@
 
   const props = defineProps({
     content: { type: Object as PropType<INode>, required: true },
+    layout: { type: Object as PropType<INode | null>, default: null },
     variables: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
     selectedNodeId: { type: Number as PropType<number | null>, default: null },
     hoveredNodeId: { type: Number as PropType<number | null>, default: null },
@@ -167,6 +168,17 @@
     if (!isElementTarget(target)) return null;
     const marker = target.closest('[data-ipb-node-id]');
     return parseNodeId(marker?.getAttribute('data-ipb-node-id') ?? null);
+  }
+
+  function mergeLayoutAndContent(layout: INode, content: INode): INode {
+    const contentRoot: INode = {
+      ...content,
+      slot: content.slot ?? 'default',
+    };
+    return {
+      ...layout,
+      children: [...(layout.children ?? []), contentRoot],
+    };
   }
 
   function findMarkedElement(nodeId: number | null): Element | null {
@@ -308,6 +320,11 @@
       [data-ipb-component="PbRow"] {
         min-height: 80px;
       }
+
+      [data-ipb-readonly="true"] {
+        opacity: 0.6;
+        user-select: none;
+      }
     `;
     doc.head.appendChild(styleEl);
   }
@@ -328,9 +345,14 @@
 
   function renderIframeNodeTree() {
     if (!contentRef.value) return;
+
+    const rootNode = props.layout
+      ? mergeLayoutAndContent(props.layout, props.content)
+      : props.content;
+
     render(
       h(NodeRenderer, {
-        node: props.content,
+        node: rootNode,
         variables: props.variables,
         markNodes: true,
       }),
@@ -443,11 +465,19 @@
     event.stopPropagation();
     hideContextMenu();
     const nodeId = getNodeIdFromEventTarget(event.target);
+    if (nodeId !== null && !findNodeById(props.content, nodeId)) {
+      emit('select', null);
+      return;
+    }
     emit('select', nodeId);
   }
 
   function handleContentMouseMove(event: MouseEvent) {
     const nodeId = getNodeIdFromEventTarget(event.target);
+    if (nodeId !== null && !findNodeById(props.content, nodeId)) {
+      if (props.hoveredNodeId !== null) emit('hover', null);
+      return;
+    }
     if (nodeId !== props.hoveredNodeId) {
       emit('hover', nodeId);
     }
@@ -591,7 +621,7 @@
     event.preventDefault();
     event.stopPropagation();
     const nodeId = getNodeIdFromEventTarget(event.target);
-    if (nodeId === null || !contentRef.value) {
+    if (nodeId === null || !contentRef.value || !findNodeById(props.content, nodeId)) {
       hideContextMenu();
       return;
     }
@@ -623,6 +653,10 @@
 
   function handleBridgePointer(payload: IframeBridgePointerPayload) {
     if (payload.interaction === 'hover') {
+      if (payload.nodeId !== null && !findNodeById(props.content, payload.nodeId)) {
+        if (props.hoveredNodeId !== null) emit('hover', null);
+        return;
+      }
       if (payload.nodeId !== props.hoveredNodeId) {
         emit('hover', payload.nodeId);
       }
@@ -631,13 +665,17 @@
 
     if (payload.interaction === 'select') {
       hideContextMenu();
+      if (payload.nodeId !== null && !findNodeById(props.content, payload.nodeId)) {
+        emit('select', null);
+        return;
+      }
       emit('select', payload.nodeId);
       return;
     }
 
     if (payload.interaction !== 'context') return;
 
-    if (payload.nodeId === null || !contentRef.value) {
+    if (payload.nodeId === null || !contentRef.value || !findNodeById(props.content, payload.nodeId)) {
       hideContextMenu();
       return;
     }
@@ -848,6 +886,14 @@
 
   watch(
     () => props.variables,
+    () => {
+      void syncOverlayRectsAfterRender();
+    },
+    { deep: true },
+  );
+
+  watch(
+    () => props.layout,
     () => {
       void syncOverlayRectsAfterRender();
     },

@@ -136,6 +136,7 @@
     return {
       'data-ipb-node-id': String(safeNode.value.id),
       'data-ipb-component': safeNode.value.name,
+      ...(safeNode.value.readonly ? { 'data-ipb-readonly': 'true' } : {}),
     };
   });
   const renderedAttrs = computed(() => ({

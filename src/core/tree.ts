@@ -200,3 +200,18 @@ export function interpolateProps(
   }
   return result;
 }
+
+/**
+ * Extract plain text from a node tree by collecting text content
+ * from PbText (and similar) components and stripping HTML tags.
+ */
+export function extractPlainText(node: INode): string {
+  const texts: string[] = [];
+  walkTree(node, (n) => {
+    if (n.props.content && typeof n.props.content === 'string') {
+      const stripped = n.props.content.replace(/<[^>]*>/g, '');
+      if (stripped.trim()) texts.push(stripped.trim());
+    }
+  });
+  return texts.join(' ').replace(/\s+/g, ' ').trim();
+}

@@ -40,6 +40,7 @@ export {
   countNodes,
   getMaxId,
   interpolateProps,
+  extractPlainText,
 } from './core/tree';
 
 export {
