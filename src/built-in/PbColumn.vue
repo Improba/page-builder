@@ -10,6 +10,7 @@
     component: {} as any, // self-reference set at registration
     slots: [{ name: 'default', label: 'Content' }],
     editableProps: [
+      { key: 'width', label: 'Width', type: 'text', defaultValue: '' },
       { key: 'gap', label: 'Gap', type: 'text', defaultValue: '16px' },
       { key: 'padding', label: 'Padding', type: 'text', defaultValue: '0' },
       { key: 'align', label: 'Align Items', type: 'select', defaultValue: 'stretch', options: [
@@ -19,7 +20,7 @@
         { label: 'End', value: 'flex-end' },
       ]},
     ],
-    defaultProps: { gap: '16px', padding: '0', align: 'stretch' },
+    defaultProps: { width: '', gap: '16px', padding: '0', align: 'stretch' },
   };
 </script>
 
@@ -27,6 +28,7 @@
   import { computed } from 'vue';
 
   const props = defineProps({
+    width: { type: String, default: '' },
     gap: { type: String, default: '16px' },
     padding: { type: String, default: '0' },
     align: { type: String, default: 'stretch' },
@@ -38,7 +40,7 @@
     gap: props.gap,
     padding: props.padding,
     alignItems: props.align,
-    width: '100%',
+    ...(props.width ? { flex: `0 0 ${props.width}`, maxWidth: props.width } : { flex: '1 1 0%', width: '100%' }),
   }));
 </script>
 

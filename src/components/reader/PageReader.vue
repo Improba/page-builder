@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, type PropType, watch } from 'vue';
   import type { IPageData, INode } from '@/types/node';
-  import { validateNode, validatePageData } from '@/core/validation';
+  import { validatePageData } from '@/core/validation';
   import { createPageBuilderError, reportDevDiagnostic } from '@/core/errors';
   import NodeRenderer from './NodeRenderer.vue';
   import ErrorBoundary from '@/components/shared/ErrorBoundary.vue';
@@ -14,8 +14,6 @@
   });
 
   const pageValidationResult = computed(() => validatePageData(props.pageData));
-  const contentValidationResult = computed(() => validateNode(props.pageData.content, 'content'));
-  const layoutValidationResult = computed(() => validateNode(props.pageData.layout, 'layout'));
   const reportedDiagnostics = new Set<string>();
 
   function reportOnce(key: string, message: string, details?: Record<string, unknown>) {
@@ -65,38 +63,12 @@
   });
 
   const readerRoot = computed<INode | null>(() => {
-    if (!isNodeObject(props.pageData.content) || !contentValidationResult.value.isValid) {
-      reportOnce(
-        'invalid-content',
-        '[PageReader] Invalid content node. Nothing can be rendered.',
-        { errors: contentValidationResult.value.errors },
-      );
+    const treeNode = props.pageData.tree;
+    if (!isNodeObject(treeNode)) {
+      reportOnce('invalid-tree', '[PageReader] Invalid tree node. Nothing can be rendered.');
       return null;
     }
-
-    // Backward-compatible fallback for legacy payloads that don't include layout.
-    if (!isNodeObject(props.pageData.layout) || !layoutValidationResult.value.isValid) {
-      reportOnce(
-        'invalid-layout',
-        '[PageReader] Invalid layout node. Falling back to content-only rendering.',
-        { errors: layoutValidationResult.value.errors },
-      );
-      return props.pageData.content;
-    }
-
-    const contentRoot: INode = {
-      ...props.pageData.content,
-      slot: props.pageData.content.slot ?? 'default',
-    };
-
-    const layoutChildren = Array.isArray(props.pageData.layout.children)
-      ? props.pageData.layout.children
-      : [];
-
-    return {
-      ...props.pageData.layout,
-      children: [...layoutChildren, contentRoot],
-    };
+    return treeNode;
   });
 </script>
 

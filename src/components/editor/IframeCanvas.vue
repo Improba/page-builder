@@ -32,8 +32,7 @@
   import NodeContextMenu, { type NodeContextMenuAction } from './NodeContextMenu.vue';
 
   const props = defineProps({
-    content: { type: Object as PropType<INode>, required: true },
-    layout: { type: Object as PropType<INode | null>, default: null },
+    tree: { type: Object as PropType<INode>, required: true },
     variables: { type: Object as PropType<Record<string, string>>, default: () => ({}) },
     selectedNodeId: { type: Number as PropType<number | null>, default: null },
     hoveredNodeId: { type: Number as PropType<number | null>, default: null },
@@ -170,17 +169,6 @@
     return parseNodeId(marker?.getAttribute('data-ipb-node-id') ?? null);
   }
 
-  function mergeLayoutAndContent(layout: INode, content: INode): INode {
-    const contentRoot: INode = {
-      ...content,
-      slot: content.slot ?? 'default',
-    };
-    return {
-      ...layout,
-      children: [...(layout.children ?? []), contentRoot],
-    };
-  }
-
   function findMarkedElement(nodeId: number | null): Element | null {
     if (nodeId === null || !contentRef.value) return null;
     return contentRef.value.querySelector(`[data-ipb-node-id="${nodeId}"]`);
@@ -222,7 +210,7 @@
   function getDraggedComponentName(state: { sourceNodeId: number | null; sourceComponentName: string | null }): string | null {
     if (state.sourceComponentName) return state.sourceComponentName;
     if (state.sourceNodeId === null) return null;
-    return findNodeById(props.content, state.sourceNodeId)?.name ?? null;
+    return findNodeById(props.tree, state.sourceNodeId)?.name ?? null;
   }
 
   function resolveDropLocation(
@@ -232,7 +220,7 @@
     const sourceName = getDraggedComponentName(state);
     if (!sourceName) return null;
 
-    const targetNode = targetNodeId === null ? null : findNodeById(props.content, targetNodeId);
+    const targetNode = targetNodeId === null ? null : findNodeById(props.tree, targetNodeId);
     if (targetNode && !targetNode.readonly) {
       const directSlot = normalizeDropSlot(targetNode, 'default', sourceName);
       if (directSlot) {
@@ -245,7 +233,7 @@
     }
 
     if (targetNodeId !== null) {
-      const parentResult = findParent(props.content, targetNodeId);
+      const parentResult = findParent(props.tree, targetNodeId);
       if (parentResult && !parentResult.parent.readonly) {
         const targetChild = parentResult.parent.children[parentResult.index];
         const slot = normalizeDropSlot(parentResult.parent, targetChild?.slot ?? 'default', sourceName);
@@ -259,13 +247,13 @@
       }
     }
 
-    if (props.content.readonly) return null;
-    const rootSlot = normalizeDropSlot(props.content, 'default', sourceName);
+    if (props.tree.readonly) return null;
+    const rootSlot = normalizeDropSlot(props.tree, 'default', sourceName);
     if (!rootSlot) return null;
 
     return {
-      targetId: props.content.id,
-      index: props.content.children.length,
+      targetId: props.tree.id,
+      index: props.tree.children.length,
       slot: rootSlot,
     };
   }
@@ -276,9 +264,9 @@
     slot: string,
     proposedIndex: number,
   ): { valid: true; index: number; slot: string } | { valid: false } {
-    const sourceNode = findNodeById(props.content, sourceNodeId);
-    const sourceParentResult = findParent(props.content, sourceNodeId);
-    const targetNode = findNodeById(props.content, targetId);
+    const sourceNode = findNodeById(props.tree, sourceNodeId);
+    const sourceParentResult = findParent(props.tree, sourceNodeId);
+    const targetNode = findNodeById(props.tree, targetId);
 
     if (!sourceNode || !sourceParentResult || sourceNode.readonly) return { valid: false };
     if (!targetNode || targetNode.readonly) return { valid: false };
@@ -359,14 +347,9 @@
 
   function renderIframeNodeTree() {
     if (!contentRef.value) return;
-
-    const rootNode = props.layout
-      ? mergeLayoutAndContent(props.layout, props.content)
-      : props.content;
-
     render(
       h(NodeRenderer, {
-        node: rootNode,
+        node: props.tree,
         variables: props.variables,
         markNodes: true,
       }),
@@ -385,8 +368,8 @@
     const markers = contentRef.value.querySelectorAll<HTMLElement>('[data-ipb-node-id]');
     markers.forEach((element) => {
       const nodeId = parseNodeId(element.getAttribute('data-ipb-node-id'));
-      const node = nodeId === null ? null : findNodeById(props.content, nodeId);
-      element.draggable = Boolean(node && !node.readonly && node.id !== props.content.id);
+      const node = nodeId === null ? null : findNodeById(props.tree, nodeId);
+      element.draggable = Boolean(node && !node.readonly && node.id !== props.tree.id);
     });
   }
 
@@ -479,7 +462,7 @@
     event.stopPropagation();
     hideContextMenu();
     const nodeId = getNodeIdFromEventTarget(event.target);
-    if (nodeId !== null && !findNodeById(props.content, nodeId)) {
+    if (nodeId !== null && !findNodeById(props.tree, nodeId)) {
       emit('select', null);
       return;
     }
@@ -488,7 +471,7 @@
 
   function handleContentMouseMove(event: MouseEvent) {
     const nodeId = getNodeIdFromEventTarget(event.target);
-    if (nodeId !== null && !findNodeById(props.content, nodeId)) {
+    if (nodeId !== null && !findNodeById(props.tree, nodeId)) {
       if (props.hoveredNodeId !== null) emit('hover', null);
       return;
     }
@@ -506,8 +489,8 @@
     const nodeId = getNodeIdFromEventTarget(event.target);
     if (nodeId === null) return;
 
-    const node = findNodeById(props.content, nodeId);
-    if (!node || node.readonly || node.id === props.content.id) {
+    const node = findNodeById(props.tree, nodeId);
+    if (!node || node.readonly || node.id === props.tree.id) {
       event.preventDefault();
       return;
     }
@@ -610,7 +593,7 @@
   }
 
   function updateContextMenuCapabilities(nodeId: number) {
-    const node = findNodeById(props.content, nodeId);
+    const node = findNodeById(props.tree, nodeId);
     if (node?.readonly) {
       canDeleteFromMenu.value = false;
       canMoveUpFromMenu.value = false;
@@ -618,7 +601,7 @@
       return;
     }
 
-    const parentResult = findParent(props.content, nodeId);
+    const parentResult = findParent(props.tree, nodeId);
     if (!parentResult) {
       canDeleteFromMenu.value = false;
       canMoveUpFromMenu.value = false;
@@ -635,7 +618,7 @@
     event.preventDefault();
     event.stopPropagation();
     const nodeId = getNodeIdFromEventTarget(event.target);
-    if (nodeId === null || !contentRef.value || !findNodeById(props.content, nodeId)) {
+    if (nodeId === null || !contentRef.value || !findNodeById(props.tree, nodeId)) {
       hideContextMenu();
       return;
     }
@@ -665,7 +648,7 @@
 
   function handleBridgePointer(payload: IframeBridgePointerPayload) {
     if (payload.interaction === 'hover') {
-      if (payload.nodeId !== null && !findNodeById(props.content, payload.nodeId)) {
+      if (payload.nodeId !== null && !findNodeById(props.tree, payload.nodeId)) {
         if (props.hoveredNodeId !== null) emit('hover', null);
         return;
       }
@@ -677,7 +660,7 @@
 
     if (payload.interaction === 'select') {
       hideContextMenu();
-      if (payload.nodeId !== null && !findNodeById(props.content, payload.nodeId)) {
+      if (payload.nodeId !== null && !findNodeById(props.tree, payload.nodeId)) {
         emit('select', null);
         return;
       }
@@ -687,7 +670,7 @@
 
     if (payload.interaction !== 'context') return;
 
-    if (payload.nodeId === null || !contentRef.value || !findNodeById(props.content, payload.nodeId)) {
+    if (payload.nodeId === null || !contentRef.value || !findNodeById(props.tree, payload.nodeId)) {
       hideContextMenu();
       return;
     }
@@ -883,9 +866,9 @@
   );
 
   watch(
-    () => props.content,
+    () => props.tree,
     () => {
-      if (contextMenuNodeId.value !== null && !findNodeById(props.content, contextMenuNodeId.value)) {
+      if (contextMenuNodeId.value !== null && !findNodeById(props.tree, contextMenuNodeId.value)) {
         hideContextMenu();
       }
       void syncOverlayRectsAfterRender();
@@ -902,7 +885,7 @@
   );
 
   watch(
-    () => props.layout,
+    () => props.tree,
     () => {
       void syncOverlayRectsAfterRender();
     },

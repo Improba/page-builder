@@ -26,18 +26,18 @@ export interface INode {
 }
 
 /**
- * Full page data structure returned by the backend.
+ * Full page data structure.
  * This is the single JSON payload the frontend receives.
  */
 export interface IPageData {
   /** Page metadata */
   meta: IPageMeta;
 
-  /** The root node of the page content tree. */
-  content: INode;
+  /** Single tree containing layout and page content. */
+  tree: INode;
 
-  /** The root node of the page layout tree. Layout wraps content. */
-  layout: INode;
+  /** Node id within `tree` that is the root of the page content subtree. */
+  contentRootId: number;
 
   /** Maximum node ID used in the tree. Incremented when adding new nodes. */
   maxId: number;
@@ -61,6 +61,5 @@ export interface IPageMeta {
  */
 export interface IPageSavePayload {
   content: INode;
-  layout: INode;
   maxId: number;
 }

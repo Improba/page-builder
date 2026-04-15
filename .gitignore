@@ -25,3 +25,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+dist-old/
+dist-new/
+dist-root-owned/

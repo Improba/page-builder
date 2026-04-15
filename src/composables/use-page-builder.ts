@@ -1,7 +1,7 @@
 import { ref, computed, type Ref, type ComputedRef } from 'vue';
 import type { IPageData, INode } from '@/types/node';
 import type { PageBuilderMode } from '@/types/editor';
-import { getMaxId } from '@/core/tree';
+import { getMaxId, findNodeById } from '@/core/tree';
 import {
   createPageBuilderError,
   reportDevDiagnostic,
@@ -16,15 +16,15 @@ export interface UsePageBuilderOptions {
 export interface UsePageBuilderReturn {
   mode: Ref<PageBuilderMode>;
   pageData: ComputedRef<IPageData>;
-  content: Ref<INode>;
-  layout: Ref<INode>;
+  tree: Ref<INode>;
+  contentRoot: ComputedRef<INode>;
+  contentRootId: Ref<number>;
   maxId: Ref<number>;
   variables: Ref<Record<string, string>>;
   isDirty: Ref<boolean>;
 
   setMode: (newMode: PageBuilderMode) => void;
-  updateContent: (newContent: INode) => void;
-  updateLayout: (newLayout: INode) => void;
+  updateTree: (newTree: INode) => void;
   nextId: () => number;
   getSnapshot: () => string;
   restoreSnapshot: (snapshot: string) => void;
@@ -32,8 +32,8 @@ export interface UsePageBuilderReturn {
 }
 
 interface SnapshotShape {
-  content: INode;
-  layout: INode;
+  tree: INode;
+  contentRootId: number;
   maxId: number;
 }
 
@@ -87,26 +87,25 @@ function sanitizeVariables(value: unknown): Record<string, string> {
 
 function sanitizeInitialData(initialData: IPageData): IPageData {
   const issues: string[] = [];
-  const fallbackContent = createFallbackNode(1, 'PbSection', null);
-  const fallbackLayout = createFallbackNode(100, 'PbContainer', null);
+  const fallbackTree = createFallbackNode(1, 'PbSection', null);
   const source = isPlainObject(initialData) ? initialData : ({} as Record<string, unknown>);
 
-  let content = fallbackContent;
-  if (isNode(source.content)) {
-    content = structuredClone(source.content);
+  let tree = fallbackTree;
+  if (isNode(source.tree)) {
+    tree = structuredClone(source.tree);
   } else {
-    issues.push('content node is invalid');
+    issues.push('tree node is invalid');
   }
 
-  let layout = fallbackLayout;
-  if (isNode(source.layout)) {
-    layout = structuredClone(source.layout);
-  } else {
-    issues.push('layout node is invalid');
+  const rawContentRootId = source.contentRootId;
+  const hasValidContentRootId = isPositiveInteger(rawContentRootId);
+  const contentRootId = hasValidContentRootId ? Math.trunc(rawContentRootId) : tree.id;
+  if (!hasValidContentRootId) {
+    issues.push('contentRootId is invalid');
   }
 
   const rawMaxId = source.maxId;
-  const computedMaxId = Math.max(getMaxId(content), getMaxId(layout));
+  const computedMaxId = getMaxId(tree);
   const hasValidMaxId = isNonNegativeInteger(rawMaxId);
   const maxId = hasValidMaxId ? Math.max(Math.trunc(rawMaxId), computedMaxId) : computedMaxId;
 
@@ -136,8 +135,8 @@ function sanitizeInitialData(initialData: IPageData): IPageData {
       updatedAt: typeof meta.updatedAt === 'string' ? meta.updatedAt : undefined,
       createdAt: typeof meta.createdAt === 'string' ? meta.createdAt : undefined,
     },
-    content,
-    layout,
+    tree,
+    contentRootId,
     maxId,
     variables,
   };
@@ -173,14 +172,14 @@ function parseSnapshot(snapshot: string): SnapshotShape {
     );
   }
 
-  if (!isPlainObject(parsed) || !isNode(parsed.content) || !isNode(parsed.layout) || !isNonNegativeInteger(parsed.maxId)) {
+  if (!isPlainObject(parsed) || !isNode(parsed.tree) || !isPositiveInteger(parsed.contentRootId) || !isNonNegativeInteger(parsed.maxId)) {
     throw createPageBuilderError(
       'INVALID_SNAPSHOT',
       '[PageBuilder] Snapshot payload shape is invalid.',
       {
         details: {
-          contentValid: isPlainObject(parsed) ? isNode(parsed.content) : false,
-          layoutValid: isPlainObject(parsed) ? isNode(parsed.layout) : false,
+          treeValid: isPlainObject(parsed) ? isNode(parsed.tree) : false,
+          contentRootIdValid: isPlainObject(parsed) ? isPositiveInteger(parsed.contentRootId) : false,
           maxIdValid: isPlainObject(parsed) ? isNonNegativeInteger(parsed.maxId) : false,
         },
       },
@@ -189,13 +188,12 @@ function parseSnapshot(snapshot: string): SnapshotShape {
 
   const normalizedMaxId = Math.max(
     Math.trunc(parsed.maxId),
-    getMaxId(parsed.content),
-    getMaxId(parsed.layout),
+    getMaxId(parsed.tree),
   );
 
   return {
-    content: parsed.content,
-    layout: parsed.layout,
+    tree: parsed.tree,
+    contentRootId: parsed.contentRootId as number,
     maxId: normalizedMaxId,
   };
 }
@@ -210,53 +208,37 @@ export function usePageBuilder(options: UsePageBuilderOptions): UsePageBuilderRe
   const _initial = sanitizeInitialData(initialData);
   const mode = ref<PageBuilderMode>(initialMode);
   const meta = ref(_initial.meta);
-  const content = ref<INode>(_initial.content);
-  const layout = ref<INode>(_initial.layout);
+  const tree = ref<INode>(_initial.tree);
+  const contentRootId = ref(_initial.contentRootId);
   const maxId = ref(_initial.maxId);
   const variables = ref<Record<string, string>>(_initial.variables);
   const isDirty = ref(false);
 
+  const contentRoot = computed<INode>(() => {
+    return findNodeById(tree.value, contentRootId.value) ?? tree.value;
+  });
+
   const pageData = computed<IPageData>(() => ({
     meta: meta.value,
-    content: content.value,
-    layout: layout.value,
+    tree: tree.value,
+    contentRootId: contentRootId.value,
     maxId: maxId.value,
     variables: variables.value,
   }));
 
-  const _initialDirtySnapshot = _serializeDirtyState({
-    content: _initial.content,
-    layout: _initial.layout,
-  });
-
-  function _serializeSnapshot(snapshot: Pick<IPageData, 'content' | 'layout' | 'maxId'>): string {
-    return JSON.stringify(snapshot);
-  }
-
-  function _serializeDirtyState(state: Pick<IPageData, 'content' | 'layout'>): string {
-    return JSON.stringify(state);
-  }
+  const _initialDirtySnapshot = JSON.stringify(tree.value);
 
   function _syncDirtyFromCurrentState() {
-    isDirty.value = _serializeDirtyState({
-      content: content.value,
-      layout: layout.value,
-    }) !== _initialDirtySnapshot;
+    isDirty.value = JSON.stringify(tree.value) !== _initialDirtySnapshot;
   }
 
   function setMode(newMode: PageBuilderMode) {
     mode.value = newMode;
   }
 
-  function updateContent(newContent: INode) {
-    content.value = newContent;
-    maxId.value = Math.max(maxId.value, getMaxId(newContent));
-    _syncDirtyFromCurrentState();
-  }
-
-  function updateLayout(newLayout: INode) {
-    layout.value = newLayout;
-    maxId.value = Math.max(maxId.value, getMaxId(newLayout));
+  function updateTree(newTree: INode) {
+    tree.value = newTree;
+    maxId.value = Math.max(maxId.value, getMaxId(newTree));
     _syncDirtyFromCurrentState();
   }
 
@@ -266,9 +248,9 @@ export function usePageBuilder(options: UsePageBuilderOptions): UsePageBuilderRe
   }
 
   function getSnapshot(): string {
-    return _serializeSnapshot({
-      content: content.value,
-      layout: layout.value,
+    return JSON.stringify({
+      tree: tree.value,
+      contentRootId: contentRootId.value,
       maxId: maxId.value,
     });
   }
@@ -276,8 +258,8 @@ export function usePageBuilder(options: UsePageBuilderOptions): UsePageBuilderRe
   function restoreSnapshot(snapshot: string) {
     try {
       const parsed = parseSnapshot(snapshot);
-      content.value = parsed.content;
-      layout.value = parsed.layout;
+      tree.value = parsed.tree;
+      contentRootId.value = parsed.contentRootId;
       maxId.value = parsed.maxId;
       _syncDirtyFromCurrentState();
     } catch (error) {
@@ -295,16 +277,9 @@ export function usePageBuilder(options: UsePageBuilderOptions): UsePageBuilderRe
   }
 
   function reset() {
-    const original = parseSnapshot(
-      JSON.stringify({
-        content: _initial.content,
-        layout: _initial.layout,
-        maxId: _initial.maxId,
-      }),
-    );
-    content.value = structuredClone(original.content);
-    layout.value = structuredClone(original.layout);
-    maxId.value = original.maxId;
+    tree.value = structuredClone(_initial.tree);
+    contentRootId.value = _initial.contentRootId;
+    maxId.value = _initial.maxId;
     variables.value = structuredClone(_initial.variables);
     isDirty.value = false;
   }
@@ -312,14 +287,14 @@ export function usePageBuilder(options: UsePageBuilderOptions): UsePageBuilderRe
   return {
     mode,
     pageData,
-    content,
-    layout,
+    tree,
+    contentRoot,
+    contentRootId,
     maxId,
     variables,
     isDirty,
     setMode,
-    updateContent,
-    updateLayout,
+    updateTree,
     nextId,
     getSnapshot,
     restoreSnapshot,

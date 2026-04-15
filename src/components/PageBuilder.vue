@@ -56,9 +56,8 @@
 
   const pageValidationResult = computed(() => validatePageData(pageData.value));
   const canRenderEditor = computed(() => {
-    const contentResult = validateNode(pageData.value.content, 'content');
-    const layoutResult = validateNode(pageData.value.layout, 'layout');
-    return contentResult.isValid && layoutResult.isValid;
+    const treeResult = validateNode(pageData.value.tree, 'tree');
+    return treeResult.isValid;
   });
   const showEditModeFallback = computed(() => mode.value === 'edit' && !canRenderEditor.value);
   const pluginI18nOptions = inject(PAGE_BUILDER_I18N_OPTIONS_KEY, null);

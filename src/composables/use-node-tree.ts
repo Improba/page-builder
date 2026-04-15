@@ -1,4 +1,4 @@
-import type { Ref } from 'vue';
+import type { Ref, ComputedRef } from 'vue';
 import { toRaw } from 'vue';
 import type { INode } from '@/types/node';
 import {
@@ -12,20 +12,22 @@ import {
 } from '@/core/tree';
 
 export interface UseNodeTreeOptions {
-  content: Ref<INode>;
+  tree: Ref<INode>;
+  contentRoot: ComputedRef<INode>;
+  contentRootId: number;
   nextId: () => number;
-  onUpdate: (newContent: INode) => void;
+  onUpdate: (newTree: INode) => void;
   onSnapshot?: (label: string) => void;
 }
 
 /**
  * Composable for manipulating the node tree (add, remove, move, update props).
  * All mutations clone before modifying to preserve immutability for history.
+ * Mutations operate on the full tree but refuse to modify readonly nodes.
  */
-export function useNodeTree({ content, nextId, onUpdate, onSnapshot }: UseNodeTreeOptions) {
-  function _mutate(label: string, mutator: (tree: INode) => boolean | void): boolean {
-    // `content.value` may be a Vue proxy; clone the raw node tree.
-    const currentTree = toRaw(content.value);
+export function useNodeTree({ tree, contentRoot, contentRootId, nextId, onUpdate, onSnapshot }: UseNodeTreeOptions) {
+  function _mutate(label: string, mutator: (fullTree: INode) => boolean | void): boolean {
+    const currentTree = toRaw(tree.value);
     const currentSnapshot = JSON.stringify(currentTree);
     const cloned = cloneTree(currentTree);
     const shouldCommit = mutator(cloned);
@@ -92,17 +94,17 @@ export function useNodeTree({ content, nextId, onUpdate, onSnapshot }: UseNodeTr
   }
 
   function canMoveNodeUp(nodeId: number): boolean {
-    const node = findNodeById(content.value, nodeId);
+    const node = findNodeById(tree.value, nodeId);
     if (!node || node.readonly) return false;
-    const parentResult = findParent(content.value, nodeId);
+    const parentResult = findParent(tree.value, nodeId);
     if (!parentResult) return false;
     return parentResult.index > 0;
   }
 
   function canMoveNodeDown(nodeId: number): boolean {
-    const node = findNodeById(content.value, nodeId);
+    const node = findNodeById(tree.value, nodeId);
     if (!node || node.readonly) return false;
-    const parentResult = findParent(content.value, nodeId);
+    const parentResult = findParent(tree.value, nodeId);
     if (!parentResult) return false;
     return parentResult.index < parentResult.parent.children.length - 1;
   }

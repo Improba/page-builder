@@ -45,12 +45,14 @@
   const editor = useEditor({ initialSnapshot: pb.getSnapshot() });
   const dragDrop = useDragDrop();
 
-  const nodeTree = useNodeTree({
-    content: pb.content,
+const nodeTree = useNodeTree({
+    tree: pb.tree,
+    contentRoot: pb.contentRoot,
+    contentRootId: pb.contentRootId.value,
     nextId: pb.nextId,
-    onUpdate: (newContent) => {
-      pb.updateContent(newContent);
-      emit('change', newContent);
+    onUpdate: (newTree) => {
+      pb.updateTree(newTree);
+      emit('change', newTree);
     },
     onSnapshot: (label) => {
       editor.pushHistory(label, pb.getSnapshot());
@@ -63,9 +65,9 @@
   const activeViewportHeight = ref<number | null>(null);
 
   function handleSave() {
+    const contentNode = findNodeById(pb.tree.value, pb.contentRootId.value);
     emit('save', {
-      content: pb.content.value,
-      layout: pb.layout.value,
+      content: contentNode ?? pb.contentRoot.value,
       maxId: pb.maxId.value,
     });
   }
@@ -75,10 +77,10 @@
     try {
       pb.restoreSnapshot(snapshot);
       const selectedNodeId = editor.selectedNodeId.value;
-      if (selectedNodeId !== null && !findNodeById(pb.content.value, selectedNodeId)) {
+      if (selectedNodeId !== null && !findNodeById(pb.tree.value, selectedNodeId)) {
         editor.selectNode(null);
       }
-      emit('change', pb.content.value);
+      emit('change', pb.tree.value);
       return true;
     } catch (error) {
       reportDevDiagnostic(
@@ -107,26 +109,26 @@
   }
 
   function handleDeleteNode(nodeId: number) {
-    const node = findNodeById(pb.content.value, nodeId);
+    const node = findNodeById(pb.tree.value, nodeId);
     if (!node || node.readonly) return;
     nodeTree.deleteNode(nodeId);
   }
 
   function handleDuplicateNode(nodeId: number) {
-    const node = findNodeById(pb.content.value, nodeId);
+    const node = findNodeById(pb.tree.value, nodeId);
     if (!node) return;
     nodeTree.duplicateNode(nodeId);
   }
 
   function handleMoveNodeUp(nodeId: number) {
-    const node = findNodeById(pb.content.value, nodeId);
+    const node = findNodeById(pb.tree.value, nodeId);
     if (!node || node.readonly) return;
     if (!nodeTree.canMoveNodeUp(nodeId)) return;
     nodeTree.moveNodeUp(nodeId);
   }
 
   function handleMoveNodeDown(nodeId: number) {
-    const node = findNodeById(pb.content.value, nodeId);
+    const node = findNodeById(pb.tree.value, nodeId);
     if (!node || node.readonly) return;
     if (!nodeTree.canMoveNodeDown(nodeId)) return;
     nodeTree.moveNodeDown(nodeId);
@@ -274,14 +276,14 @@
 
   function handlePaletteAdd(componentName: string) {
     const selectedNodeId = editor.selectedNodeId.value;
-    const selectedNode = selectedNodeId !== null ? findNodeById(pb.content.value, selectedNodeId) : undefined;
+    const selectedNode = selectedNodeId !== null ? findNodeById(pb.tree.value, selectedNodeId) : undefined;
 
-    let parentId = pb.content.value.id;
-    let index = pb.content.value.children.length;
+    let parentId = pb.contentRoot.value.id;
+    let index = pb.contentRoot.value.children.length;
     let slot = 'default';
 
     if (selectedNodeId !== null && selectedNode) {
-      const parentResult = findParent(pb.content.value, selectedNodeId);
+      const parentResult = findParent(pb.tree.value, selectedNodeId);
       if (parentResult) {
         parentId = parentResult.parent.id;
         index = parentResult.index + 1;
@@ -335,7 +337,7 @@
     <div class="ipb-page-editor__body">
       <LeftDrawer
         :open="editor.leftDrawerOpen.value"
-        :content="pb.content.value"
+        :content="pb.contentRoot.value"
         :selected-node-id="editor.selectedNodeId.value"
         @toggle="editor.toggleLeftDrawer"
         @select="editor.selectNode"
@@ -345,8 +347,7 @@
       />
 
       <IframeCanvas
-        :content="pb.content.value"
-        :layout="pb.layout.value"
+        :tree="pb.tree.value"
         :variables="pb.variables.value"
         :selected-node-id="editor.selectedNodeId.value"
         :hovered-node-id="editor.hoveredNodeId.value"
@@ -363,7 +364,7 @@
       <RightDrawer
         :open="editor.rightDrawerOpen.value"
         :selected-node-id="editor.selectedNodeId.value"
-        :content="pb.content.value"
+        :content="pb.tree.value"
         @toggle="editor.toggleRightDrawer"
         @update-props="nodeTree.updateNodeProps"
         @delete="handleDeleteNode"

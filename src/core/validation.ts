@@ -259,7 +259,7 @@ export function validatePageData(pageData: unknown): IValidationResult {
     };
   }
 
-  const { meta, content, layout, maxId, variables } = pageData;
+  const { meta, tree, contentRootId, maxId, variables } = pageData;
 
   if (!isRecord(meta)) {
     addError(context, 'meta', 'meta must be an object.');
@@ -290,8 +290,11 @@ export function validatePageData(pageData: unknown): IValidationResult {
     }
   }
 
-  validateNodeInto(content, 'content', context);
-  validateNodeInto(layout, 'layout', context);
+  validateNodeInto(tree, 'tree', context);
+
+  if (!(typeof contentRootId === 'number' && Number.isInteger(contentRootId) && contentRootId > 0)) {
+    addError(context, 'contentRootId', 'contentRootId must be a positive integer.');
+  }
 
   if (!(typeof maxId === 'number' && Number.isInteger(maxId)) || maxId < 0) {
     addError(context, 'maxId', 'maxId must be a non-negative integer.');
