@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-04-15
+
+### Fixed
+
+- Fixed list markers (bullets and numbers) not showing in the rich text editor
+  and iframe canvas. CSS resets (Tailwind/Nuxt UI) were stripping `list-style`.
+  Explicitly set `list-style-type: disc` on `<ul>`, `list-style-type: decimal`
+  on `<ol>`, and `display: list-item` on `<li>` in both the editor component and
+  the iframe base styles.
+
 ## [0.2.1] - 2026-04-15
 
 ### Added
@@ -38,6 +48,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Built-in component set and Vue plugin integration.
 - Unit/integration test setup, Docker-based developer workflow, and TypeDoc API generation.
 
-[Unreleased]: https://github.com/improba/page-builder/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/improba/page-builder/compare/v0.2.3...HEAD
+[0.2.3]: https://github.com/improba/page-builder/compare/v0.2.1...v0.2.3
 [0.2.1]: https://github.com/improba/page-builder/compare/v0.1.0...v0.2.1
 [0.1.0]: https://github.com/improba/page-builder/releases/tag/v0.1.0

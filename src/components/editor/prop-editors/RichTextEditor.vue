@@ -404,14 +404,21 @@
     font-size: 0.9em;
   }
 
-  .ipb-richtext-editor__content :deep(ul),
+  .ipb-richtext-editor__content :deep(ul) {
+    margin: 0.35em 0;
+    padding-left: 1.5em;
+    list-style-type: disc;
+  }
+
   .ipb-richtext-editor__content :deep(ol) {
     margin: 0.35em 0;
     padding-left: 1.5em;
+    list-style-type: decimal;
   }
 
   .ipb-richtext-editor__content :deep(li) {
     margin: 0.15em 0;
+    display: list-item;
   }
 
   .ipb-richtext-editor__content :deep(a) {

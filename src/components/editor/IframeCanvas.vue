@@ -321,6 +321,11 @@
         box-sizing: border-box;
       }
 
+      /* Restore list markers that CSS resets may strip */
+      ul { list-style-type: disc; padding-left: 1.5em; }
+      ol { list-style-type: decimal; padding-left: 1.5em; }
+      li { display: list-item; }
+
       /* Minimum size for layout containers so empty columns/rows remain droppable in the editor */
       [data-ipb-component="PbColumn"] {
         min-width: 80px;
