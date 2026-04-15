@@ -85,7 +85,7 @@ describe('RichTextEditor', () => {
       return true;
     });
 
-    await wrapper.find('[data-command="bold"]').trigger('click');
+    await wrapper.find('button[aria-label="Bold"]').trigger('click');
 
     expect(execSpy).toHaveBeenCalledWith('bold', false, undefined);
     expect(wrapper.emitted('update:modelValue')).toEqual([['<p><b>Text</b></p>']]);
@@ -108,7 +108,7 @@ describe('RichTextEditor', () => {
       return true;
     });
 
-    await wrapper.find('[data-command="link"]').trigger('click');
+    await wrapper.find('button[aria-label="Link"]').trigger('click');
 
     expect(promptSpy).toHaveBeenCalledWith('Enter URL', 'https://');
     expect(execSpy).toHaveBeenCalledWith('createLink', false, 'https://example.test');
@@ -156,7 +156,7 @@ describe('RichTextEditor', () => {
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
     const execSpy = mockExecCommand();
 
-    await wrapper.find('[data-command="link"]').trigger('click');
+    await wrapper.find('button[aria-label="Link"]').trigger('click');
 
     expect(promptSpy).toHaveBeenCalledWith('Enter URL', 'https://');
     expect(execSpy).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ describe('RichTextEditor', () => {
     const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('javascript:alert(1)');
     const execSpy = mockExecCommand();
 
-    await wrapper.find('[data-command="link"]').trigger('click');
+    await wrapper.find('button[aria-label="Link"]').trigger('click');
 
     expect(promptSpy).toHaveBeenCalledWith('Enter URL', 'https://');
     expect(execSpy).not.toHaveBeenCalled();
