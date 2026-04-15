@@ -73,7 +73,7 @@ interface IComponentDefinition {
   label: string;                      // Display name in the editor palette
   description?: string;               // Tooltip text
   category: ComponentCategory;        // 'layout' | 'content' | 'media' | 'navigation' | 'form' | 'data' | 'custom'
-  icon?: string;                      // Preview icon for the palette
+  icon?: string;                      // Preview icon for the palette (emoji, unicode, or 'i-lucide-*' name)
   component: Component;               // The Vue component to render
   slots: ISlotDefinition[];           // Named slots the component exposes
   editableProps: IPropDefinition[];   // Props editable in the property editor
@@ -205,3 +205,20 @@ and its definition.
 
 The registry is backed by a Vue `reactive(Map)`, so any component that reads from it will
 automatically re-render when registrations change.
+
+## Icon Support
+
+The `icon` field in `IComponentDefinition` accepts three kinds of values:
+
+- **Emoji / Unicode** — A single character like `'T'`, `'🖼'`, or `'☐'`. Rendered as text in the palette.
+- **Lucide icon name** — A string in the format `'i-lucide-<name>'` (e.g. `'i-lucide-lock'`, `'i-lucide-play-circle'`). The palette renders the actual Lucide SVG inline. All [Lucide icons](https://lucide.dev/icons/) are available; the icon data is bundled in the package.
+- **`undefined`** — Falls back to a default placeholder (`◻`).
+
+```ts
+// Emoji icon (built-in components)
+{ icon: '🖼' }
+
+// Lucide icon (custom components)
+{ icon: 'i-lucide-lock' }
+{ icon: 'i-lucide-square-library' }
+```

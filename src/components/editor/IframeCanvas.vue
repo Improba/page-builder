@@ -189,13 +189,22 @@
   function getOverlayRect(element: Element | null): OverlayRect | null {
     if (!element || !contentRef.value) return null;
     const nodeRect = element.getBoundingClientRect();
-    const contentRect = contentRef.value.getBoundingClientRect();
-    const frameScrollTop = iframeWindowRef.value?.scrollY ?? 0;
-    const frameScrollLeft = iframeWindowRef.value?.scrollX ?? 0;
 
+    if (useFallbackDom.value) {
+      const contentRect = contentRef.value.getBoundingClientRect();
+      return {
+        top: nodeRect.top - contentRect.top,
+        left: nodeRect.left - contentRect.left,
+        width: nodeRect.width,
+        height: nodeRect.height,
+      };
+    }
+
+    // Iframe mode: getBoundingClientRect() returns coords relative to the iframe
+    // viewport, which maps 1:1 to the stage (the overlay's positioned ancestor).
     return {
-      top: nodeRect.top - contentRect.top + frameScrollTop,
-      left: nodeRect.left - contentRect.left + frameScrollLeft,
+      top: nodeRect.top,
+      left: nodeRect.left,
       width: nodeRect.width,
       height: nodeRect.height,
     };
@@ -627,10 +636,8 @@
     }
 
     const contentRect = contentRef.value.getBoundingClientRect();
-    const frameScrollTop = iframeWindowRef.value?.scrollY ?? 0;
-    const frameScrollLeft = iframeWindowRef.value?.scrollX ?? 0;
-    contextMenuX.value = event.clientX - contentRect.left + frameScrollLeft;
-    contextMenuY.value = event.clientY - contentRect.top + frameScrollTop;
+    contextMenuX.value = event.clientX - contentRect.left;
+    contextMenuY.value = event.clientY - contentRect.top;
     contextMenuNodeId.value = nodeId;
     updateContextMenuCapabilities(nodeId);
     contextMenuOpen.value = true;
@@ -680,11 +687,8 @@
       return;
     }
 
-    const contentRect = contentRef.value.getBoundingClientRect();
-    const frameScrollTop = iframeWindowRef.value?.scrollY ?? 0;
-    const frameScrollLeft = iframeWindowRef.value?.scrollX ?? 0;
-    contextMenuX.value = payload.clientX - contentRect.left + frameScrollLeft;
-    contextMenuY.value = payload.clientY - contentRect.top + frameScrollTop;
+    contextMenuX.value = payload.clientX;
+    contextMenuY.value = payload.clientY;
     contextMenuNodeId.value = payload.nodeId;
     updateContextMenuCapabilities(payload.nodeId);
     contextMenuOpen.value = true;

@@ -47,8 +47,10 @@ The left drawer displays all registered, non-hidden components grouped by catego
 - **media** -- PbImage
 - **custom** -- Any user-registered components
 
-Each entry shows the component's `label`, `icon`, and `description`. Components are dragged
-from the palette onto the canvas to add them to the tree.
+Each entry shows the component's `label`, `icon`, and `description`. Icons can be emoji/unicode
+characters (e.g. `'T'`, `'🖼'`) or [Lucide](https://lucide.dev/) icon names using the
+`i-lucide-*` format (e.g. `'i-lucide-lock'`). Lucide icons are rendered as inline SVGs.
+Components are dragged from the palette onto the canvas to add them to the tree.
 
 The drawer can be toggled open/closed via `toggleLeftDrawer()`.
 

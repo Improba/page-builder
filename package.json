@@ -53,6 +53,9 @@
     "release": "./scripts/release.sh",
     "prepublishOnly": "npm run release:prepare"
   },
+  "dependencies": {
+    "lucide": "^1.8.0"
+  },
   "peerDependencies": {
     "vue": "^3.4.0"
   },

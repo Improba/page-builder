@@ -20,7 +20,7 @@ Vue 3 library for building and rendering pages from a JSON tree. It provides **r
 
 - **Read mode** — Renders content from a JSON tree, SSR-compatible. Integrable with Nuxt or any Vue 3 app.
 - **Edit mode** — WYSIWYG editor with component palette, property panel, drag-and-drop, undo/redo, and responsive preview (desktop / tablet / mobile).
-- **Component registry** — Register custom Vue components (typed props, slots, edit metadata). Ships with layout and content components (PbColumn, PbRow, PbText, PbImage, etc.).
+- **Component registry** — Register custom Vue components (typed props, slots, edit metadata). Ships with layout and content components (PbColumn, PbRow, PbText, PbImage, etc.). Palette icons support emoji/unicode or [Lucide](https://lucide.dev/) names (`i-lucide-*`).
 - **Single JSON contract** — Backend sends one `IPageData` payload; frontend renders and edits it. Clear separation of concerns.
 
 ## Quick Start
@@ -110,6 +110,7 @@ const myHero: IComponentDefinition = {
   label: 'Hero Banner',
   description: 'Full-width hero section with title and CTA.',
   category: 'content',
+  icon: 'i-lucide-layout-template',
   component: MyHero,
   slots: [{ name: 'default', label: 'Content' }],
   editableProps: [

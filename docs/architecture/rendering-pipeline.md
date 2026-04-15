@@ -218,16 +218,33 @@ SSR read-mode coverage is implemented in `tests/ssr/render.test.ts` (Node enviro
 This aligns with the runtime pipeline: root composition and recursion are synchronous and rely on
 Vue reactivity/computed state only, with no browser-only APIs.
 
-## Future: Iframe Isolation
+## Iframe Canvas Isolation
 
-A planned enhancement is to render the edit mode canvas content inside an iframe. This would
-provide:
+The edit mode canvas renders content inside an iframe via `IframeCanvas.vue`, providing:
 
 - **Style isolation** -- Page styles cannot leak into the editor UI and vice versa.
-- **Viewport accuracy** -- The iframe can be resized to exact device dimensions without CSS
+- **Viewport accuracy** -- The iframe is resized to exact device dimensions without CSS
   transforms.
 - **Script safety** -- Custom component scripts run in an isolated context.
 
-The rendering pipeline itself (NodeRenderer recursion) would remain unchanged. The iframe
-boundary would be handled at the `EditorCanvas` level, mounting a separate Vue app inside the
-iframe that renders the same `NodeRenderer` tree.
+The rendering pipeline (NodeRenderer recursion) is unchanged. The iframe boundary is handled
+by `IframeCanvas`, which mounts the `NodeRenderer` tree inside the iframe document and
+positions selection/hover overlays as siblings of the iframe in the parent DOM.
+
+### Overlay Positioning
+
+Selection, hover, and drop overlays are `position: absolute` divs inside
+`.ipb-iframe-canvas__stage` (the positioned ancestor that wraps both the iframe and the
+overlays). Since the stage maps 1:1 to the iframe viewport, overlay coordinates are taken
+directly from `element.getBoundingClientRect()` called on iframe-internal elements -- no
+scroll offset adjustment is needed, because `getBoundingClientRect()` already returns
+viewport-relative coordinates.
+
+A fallback DOM path (`useFallbackDom`) is available when iframe access is restricted. In that
+mode, overlay positions are computed relative to the content root element.
+
+### Iframe Bridge
+
+Pointer and keyboard events inside the iframe are relayed to the parent via `postMessage`
+through the iframe bridge (`src/core/iframe-bridge.ts`). The bridge forwards click, hover,
+context-menu, and keydown events with node IDs resolved from `data-ipb-node-id` markers.

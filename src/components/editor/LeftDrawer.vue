@@ -5,6 +5,7 @@
   import type { INode } from '@/types/node';
   import { usePageBuilderI18n } from '@/i18n';
   import TreePanel from './TreePanel.vue';
+  import PbIcon from './PbIcon.vue';
 
   const props = defineProps({
     open: { type: Boolean, default: true },
@@ -189,7 +190,7 @@
               @dragstart="handleDragStart(comp.name, $event)"
               @dragend="handleDragEnd"
             >
-              <span class="ipb-left-drawer__component-icon" aria-hidden="true">{{ comp.icon ?? '◻' }}</span>
+              <PbIcon class="ipb-left-drawer__component-icon" :icon="comp.icon" aria-hidden="true" />
               <span class="ipb-left-drawer__component-label">{{ comp.label }}</span>
             </button>
           </div>
@@ -376,6 +377,10 @@
     font-size: 16px;
     width: 24px;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .ipb-left-drawer__empty {
