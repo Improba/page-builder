@@ -13,7 +13,7 @@ function makePageData(): IPageData {
       url: '/editor-integration',
       status: 'draft',
     },
-    content: {
+    tree: {
       id: 1,
       name: 'PbSection',
       slot: null,
@@ -33,14 +33,8 @@ function makePageData(): IPageData {
         },
       ],
     },
-    layout: {
-      id: 100,
-      name: 'PbContainer',
-      slot: null,
-      props: {},
-      children: [],
-    },
-    maxId: 100,
+    contentRootId: 1,
+    maxId: 2,
     variables: {},
   };
 }
@@ -352,7 +346,7 @@ describe('Editor integration', () => {
     }
   });
 
-  it('emits save payload with current content/layout/maxId', async () => {
+  it('emits save payload with current content and maxId', async () => {
     const wrapper = mountEditor();
 
     try {
@@ -375,7 +369,6 @@ describe('Editor integration', () => {
 
       const payload = saves?.[0]?.[0] as IPageSavePayload;
       expect(payload.maxId).toBe(addedNodeId);
-      expect(payload.layout).toEqual(makePageData().layout);
       expect(payload.content.children).toHaveLength(2);
       expect(payload.content.children[0]).toMatchObject({
         id: 2,

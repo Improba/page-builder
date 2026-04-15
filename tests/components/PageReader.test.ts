@@ -43,7 +43,7 @@ function makePageData(layoutName = 'LayoutShell', contentSlot: string | null = n
   const content: INode = {
     id: 1,
     name: 'ContentBlock',
-    slot: contentSlot,
+    slot: contentSlot ?? 'default',
     props: { text: 'Hello world' },
     children: [],
   };
@@ -55,14 +55,14 @@ function makePageData(layoutName = 'LayoutShell', contentSlot: string | null = n
       url: '/reader-test',
       status: 'draft',
     },
-    content,
-    layout: {
+    tree: {
       id: 100,
       name: layoutName,
       slot: null,
       props: {},
-      children: [],
+      children: [content],
     },
+    contentRootId: 1,
     maxId: 100,
     variables: {},
   };
@@ -76,20 +76,16 @@ function fallbackTestPageData(contentComponentName: string): IPageData {
       url: '/test',
       status: 'draft',
     },
-    content: {
-      id: 1,
-      name: contentComponentName,
-      slot: null,
-      props: {},
-      children: [],
-    },
-    layout: {
+    tree: {
       id: 100,
       name: 'LayoutShell',
       slot: null,
       props: {},
-      children: [],
+      children: [
+        { id: 1, name: contentComponentName, slot: 'default', props: {}, children: [] },
+      ],
     },
+    contentRootId: 1,
     maxId: 100,
     variables: {},
   };
@@ -119,7 +115,6 @@ describe('PageReader', () => {
 
     expect(wrapper.find('.ipb-page-reader > .layout-shell').exists()).toBe(true);
     expect(wrapper.find('.layout-shell .content-block').exists()).toBe(true);
-    expect(pageData.content.slot).toBeNull();
   });
 
   it('uses the content root slot when provided', () => {
@@ -133,12 +128,17 @@ describe('PageReader', () => {
     expect(wrapper.find('.slot-default .content-block').exists()).toBe(false);
   });
 
-  it('falls back to content-only rendering when layout is missing', () => {
-    const pageData = makePageData();
-    const legacyPageData = { ...pageData, layout: undefined } as unknown as IPageData;
+  it('renders content-only tree without a layout wrapper', () => {
+    const pageData: IPageData = {
+      meta: { id: 'page-1', name: 'Reader Test', url: '/reader-test', status: 'draft' },
+      tree: { id: 1, name: 'ContentBlock', slot: null, props: { text: 'Hello world' }, children: [] },
+      contentRootId: 1,
+      maxId: 1,
+      variables: {},
+    };
 
     const wrapper = mount(PageReader, {
-      props: { pageData: legacyPageData },
+      props: { pageData },
     });
 
     expect(wrapper.find('.content-block').exists()).toBe(true);
@@ -169,9 +169,9 @@ describe('PageReader', () => {
     expect(wrapper.text()).toContain('This block could not be rendered.');
   });
 
-  it('shows an invalid payload fallback when content root is missing', () => {
+  it('shows an invalid payload fallback when tree is missing', () => {
     const pageData = makePageData();
-    const invalidPageData = { ...pageData, content: null } as unknown as IPageData;
+    const invalidPageData = { ...pageData, tree: null } as unknown as IPageData;
 
     const wrapper = mount(PageReader, {
       props: { pageData: invalidPageData },

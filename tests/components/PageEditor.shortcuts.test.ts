@@ -3,15 +3,16 @@ import { mount } from '@vue/test-utils';
 import type { INode, IPageData } from '@/types/node';
 
 type MockPageBuilder = {
-  content: { value: INode };
-  layout: { value: INode };
+  tree: { value: INode };
+  contentRoot: { value: INode };
+  contentRootId: { value: number };
   maxId: { value: number };
   variables: { value: Record<string, string> };
   isDirty: { value: boolean };
   nextId: () => number;
   getSnapshot: () => string;
   restoreSnapshot: (snapshot: string) => void;
-  updateContent: (newContent: INode) => void;
+  updateTree: (newTree: INode) => void;
 };
 
 type MockEditor = {
@@ -46,29 +47,40 @@ const mockState = vi.hoisted(() => ({
 
 vi.mock('@/composables/use-page-builder', async () => {
   const vue = await import('vue');
-  const { ref } = vue;
+  const { ref, computed } = vue;
+
+  function findNode(node: INode, id: number): INode | null {
+    if (node.id === id) return node;
+    for (const child of node.children) {
+      const found = findNode(child, id);
+      if (found) return found;
+    }
+    return null;
+  }
 
   return {
     usePageBuilder: vi.fn((options: { initialData: IPageData }) => {
-      const content = ref(JSON.parse(JSON.stringify(options.initialData.content)) as INode);
-      const layout = ref(JSON.parse(JSON.stringify(options.initialData.layout)) as INode);
+      const tree = ref(JSON.parse(JSON.stringify(options.initialData.tree)) as INode);
+      const contentRootId = ref(options.initialData.contentRootId);
+      const contentRoot = computed(() => findNode(tree.value, contentRootId.value) ?? tree.value);
       const maxId = ref(options.initialData.maxId);
       const variables = ref({ ...options.initialData.variables });
       const isDirty = ref(false);
 
       const pb: MockPageBuilder = {
-        content,
-        layout,
+        tree,
+        contentRoot,
+        contentRootId,
         maxId,
         variables,
         isDirty,
         nextId: () => ++maxId.value,
-        getSnapshot: () => JSON.stringify(content.value),
+        getSnapshot: () => JSON.stringify(tree.value),
         restoreSnapshot: (snapshot) => {
-          content.value = JSON.parse(snapshot) as INode;
+          tree.value = JSON.parse(snapshot) as INode;
         },
-        updateContent: (newContent) => {
-          content.value = newContent;
+        updateTree: (newTree) => {
+          tree.value = newTree;
         },
       };
 
@@ -186,7 +198,7 @@ vi.mock('@/composables/use-node-tree', () => {
   }
 
   return {
-    useNodeTree: vi.fn((options: { content: { value: INode }; onUpdate: (tree: INode) => void; onSnapshot?: (label: string) => void }) => ({
+    useNodeTree: vi.fn((options: { tree: { value: INode }; onUpdate: (tree: INode) => void; onSnapshot?: (label: string) => void }) => ({
       addNode: vi.fn(),
       moveNodeTo: vi.fn(),
       duplicateNode: (() => {
@@ -196,7 +208,7 @@ vi.mock('@/composables/use-node-tree', () => {
       })(),
       deleteNode: (() => {
         const spy = vi.fn((nodeId: number) => {
-          const cloned = JSON.parse(JSON.stringify(options.content.value)) as INode;
+          const cloned = JSON.parse(JSON.stringify(options.tree.value)) as INode;
           removeNodeById(cloned, nodeId);
           options.onUpdate(cloned);
           options.onSnapshot?.('Delete node');
@@ -206,9 +218,9 @@ vi.mock('@/composables/use-node-tree', () => {
       })(),
       canMoveNodeUp: (() => {
         const spy = vi.fn((nodeId: number) => {
-          const node = findNodeById(options.content.value, nodeId);
+          const node = findNodeById(options.tree.value, nodeId);
           if (!node || node.readonly) return false;
-          const parentResult = findParentById(options.content.value, nodeId);
+          const parentResult = findParentById(options.tree.value, nodeId);
           return parentResult !== null && parentResult.index > 0;
         });
         mockState.canMoveNodeUpSpy = spy;
@@ -216,9 +228,9 @@ vi.mock('@/composables/use-node-tree', () => {
       })(),
       canMoveNodeDown: (() => {
         const spy = vi.fn((nodeId: number) => {
-          const node = findNodeById(options.content.value, nodeId);
+          const node = findNodeById(options.tree.value, nodeId);
           if (!node || node.readonly) return false;
-          const parentResult = findParentById(options.content.value, nodeId);
+          const parentResult = findParentById(options.tree.value, nodeId);
           return parentResult !== null && parentResult.index < parentResult.parent.children.length - 1;
         });
         mockState.canMoveNodeDownSpy = spy;
@@ -226,7 +238,7 @@ vi.mock('@/composables/use-node-tree', () => {
       })(),
       moveNodeUp: (() => {
         const spy = vi.fn((nodeId: number) => {
-          const cloned = JSON.parse(JSON.stringify(options.content.value)) as INode;
+          const cloned = JSON.parse(JSON.stringify(options.tree.value)) as INode;
           const parentResult = findParentById(cloned, nodeId);
           if (!parentResult || parentResult.index <= 0) return;
           const [node] = parentResult.parent.children.splice(parentResult.index, 1);
@@ -239,7 +251,7 @@ vi.mock('@/composables/use-node-tree', () => {
       })(),
       moveNodeDown: (() => {
         const spy = vi.fn((nodeId: number) => {
-          const cloned = JSON.parse(JSON.stringify(options.content.value)) as INode;
+          const cloned = JSON.parse(JSON.stringify(options.tree.value)) as INode;
           const parentResult = findParentById(cloned, nodeId);
           if (!parentResult || parentResult.index >= parentResult.parent.children.length - 1) return;
           const [node] = parentResult.parent.children.splice(parentResult.index, 1);
@@ -251,7 +263,7 @@ vi.mock('@/composables/use-node-tree', () => {
         return spy;
       })(),
       updateNodeProps: vi.fn((nodeId: number, props: Record<string, unknown>) => {
-        const cloned = JSON.parse(JSON.stringify(options.content.value)) as INode;
+        const cloned = JSON.parse(JSON.stringify(options.tree.value)) as INode;
         const node = findNodeById(cloned, nodeId);
         if (node) {
           node.props = { ...node.props, ...props };
@@ -318,7 +330,7 @@ function makePageData(): IPageData {
       url: '/keyboard-shortcuts',
       status: 'draft',
     },
-    content: {
+    tree: {
       id: 1,
       name: 'PbSection',
       slot: null,
@@ -333,14 +345,8 @@ function makePageData(): IPageData {
         },
       ],
     },
-    layout: {
-      id: 100,
-      name: 'PbContainer',
-      slot: null,
-      props: {},
-      children: [],
-    },
-    maxId: 100,
+    contentRootId: 1,
+    maxId: 2,
     variables: {},
   };
 }
@@ -353,7 +359,7 @@ function makeContextPageData(): IPageData {
       url: '/context-menu',
       status: 'draft',
     },
-    content: {
+    tree: {
       id: 1,
       name: 'PbSection',
       slot: null,
@@ -383,14 +389,8 @@ function makeContextPageData(): IPageData {
         },
       ],
     },
-    layout: {
-      id: 100,
-      name: 'PbContainer',
-      slot: null,
-      props: {},
-      children: [],
-    },
-    maxId: 100,
+    contentRootId: 1,
+    maxId: 4,
     variables: {},
   };
 }
@@ -474,23 +474,23 @@ describe('PageEditor keyboard shortcuts', () => {
       dispatchKeydown({ key: 'Delete', code: 'Delete' });
       await nextTick();
       expect(mockState.deleteNodeSpy).toHaveBeenCalledWith(2);
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(0);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(0);
 
       dispatchKeydown({ key: 'z', ctrlKey: true });
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(1);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(1);
 
       dispatchKeydown({ key: 'Z', ctrlKey: true, shiftKey: true });
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(0);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(0);
 
       dispatchKeydown({ key: 'z', ctrlKey: true });
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(1);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(1);
 
       dispatchKeydown({ key: 'y', ctrlKey: true });
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(0);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(0);
     } finally {
       wrapper.unmount();
     }
@@ -501,15 +501,15 @@ describe('PageEditor keyboard shortcuts', () => {
 
     try {
       await wrapper.find('.update-node').trigger('click');
-      expect(mockState.pageBuilder?.content.value.children[0]?.props.text).toBe('Updated');
+      expect(mockState.pageBuilder?.tree.value.children[0]?.props.text).toBe('Updated');
 
       dispatchKeydown({ key: 'z', ctrlKey: true });
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children[0]?.props.text).toBe('Hello');
+      expect(mockState.pageBuilder?.tree.value.children[0]?.props.text).toBe('Hello');
 
       await wrapper.find('button[title^="Redo"]').trigger('click');
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children[0]?.props.text).toBe('Updated');
+      expect(mockState.pageBuilder?.tree.value.children[0]?.props.text).toBe('Updated');
     } finally {
       wrapper.unmount();
     }
@@ -521,7 +521,7 @@ describe('PageEditor keyboard shortcuts', () => {
     try {
       await wrapper.find('.update-node').trigger('click');
       await nextTick();
-      expect(mockState.pageBuilder?.content.value.children[0]?.props.text).toBe('Updated');
+      expect(mockState.pageBuilder?.tree.value.children[0]?.props.text).toBe('Updated');
 
       const restoreSpy = vi.fn(() => {
         throw new Error('Invalid snapshot payload');
@@ -535,7 +535,7 @@ describe('PageEditor keyboard shortcuts', () => {
       await nextTick();
 
       expect(restoreSpy).toHaveBeenCalledTimes(1);
-      expect(mockState.pageBuilder.content.value.children[0]?.props.text).toBe('Updated');
+      expect(mockState.pageBuilder.tree.value.children[0]?.props.text).toBe('Updated');
       const diagnostics = consoleErrorSpy.mock.calls.map((call) => String(call[0] ?? ''));
       expect(
         diagnostics.some((message) =>
@@ -570,7 +570,7 @@ describe('PageEditor keyboard shortcuts', () => {
       }
 
       expect(wrapper.emitted('save')).toBeUndefined();
-      expect(mockState.pageBuilder?.content.value.children).toHaveLength(1);
+      expect(mockState.pageBuilder?.tree.value.children).toHaveLength(1);
     } finally {
       document.querySelectorAll('input, textarea, [contenteditable]').forEach((element) => element.remove());
       wrapper.unmount();

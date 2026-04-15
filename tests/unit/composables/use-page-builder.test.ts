@@ -25,8 +25,11 @@ function makeInitialData(overrides: Partial<IPageData> = {}): IPageData {
       url: '/landing',
       status: 'draft',
     },
-    content: makeNode(1, 'Root', [makeNode(2, 'Text')], null),
-    layout: makeNode(10, 'LayoutRoot', [makeNode(11, 'Container')], null),
+    tree: makeNode(10, 'LayoutRoot', [
+      makeNode(11, 'Container'),
+      makeNode(1, 'Root', [makeNode(2, 'Text')]),
+    ], null),
+    contentRootId: 1,
     maxId: 11,
     variables: {
       HERO_TITLE: 'Welcome',
@@ -42,8 +45,8 @@ describe('usePageBuilder', () => {
       const builder = usePageBuilder({ initialData });
 
       expect(builder.mode.value).toBe('read');
-      expect(builder.content.value).toEqual(initialData.content);
-      expect(builder.layout.value).toEqual(initialData.layout);
+      expect(builder.tree.value).toEqual(initialData.tree);
+      expect(builder.contentRootId.value).toBe(initialData.contentRootId);
       expect(builder.maxId.value).toBe(initialData.maxId);
       expect(builder.variables.value).toEqual(initialData.variables);
       expect(builder.pageData.value).toEqual(initialData);
@@ -59,7 +62,7 @@ describe('usePageBuilder', () => {
       expect(builder.mode.value).toBe('edit');
     });
 
-    it('normalizes initial maxId to cover content/layout trees', () => {
+    it('normalizes initial maxId to cover all tree nodes', () => {
       const builder = usePageBuilder({
         initialData: makeInitialData({ maxId: 1 }),
       });
@@ -81,16 +84,16 @@ describe('usePageBuilder', () => {
     });
   });
 
-  describe('updateContent', () => {
-    it('updates content, bumps maxId from content tree, and marks dirty', () => {
+  describe('updateTree', () => {
+    it('updates tree, bumps maxId from tree, and marks dirty', () => {
       const builder = usePageBuilder({
         initialData: makeInitialData({ maxId: 3 }),
       });
-      const newContent = makeNode(4, 'Root', [makeNode(12, 'Hero')], null);
+      const newTree = makeNode(4, 'Root', [makeNode(12, 'Hero')], null);
 
-      builder.updateContent(newContent);
+      builder.updateTree(newTree);
 
-      expect(builder.content.value).toEqual(newContent);
+      expect(builder.tree.value).toEqual(newTree);
       expect(builder.maxId.value).toBe(12);
       expect(builder.isDirty.value).toBe(true);
     });
@@ -101,29 +104,29 @@ describe('usePageBuilder', () => {
       const builder = usePageBuilder({
         initialData: makeInitialData({ maxId: 25 }),
       });
-      const lowIdContent = makeNode(1, 'Root', [makeNode(2, 'Text')], null);
+      const lowIdTree = makeNode(1, 'Root', [makeNode(2, 'Text')], null);
 
-      builder.updateContent(lowIdContent);
+      builder.updateTree(lowIdTree);
 
       expect(builder.maxId.value).toBe(25);
     });
 
-    it('tracks the highest id across content and layout updates', () => {
+    it('tracks the highest id across successive tree updates', () => {
       const builder = usePageBuilder({
         initialData: makeInitialData({
-          content: makeNode(1, 'Root', [], null),
-          layout: makeNode(2, 'LayoutRoot', [], null),
+          tree: makeNode(1, 'Root', [makeNode(2, 'LayoutRoot')], null),
+          contentRootId: 1,
           maxId: 2,
         }),
       });
 
-      builder.updateContent(makeNode(6, 'Root', [makeNode(8, 'Section')], null));
+      builder.updateTree(makeNode(6, 'Root', [makeNode(8, 'Section')], null));
       expect(builder.maxId.value).toBe(8);
 
-      builder.updateLayout(makeNode(9, 'LayoutRoot', [makeNode(15, 'Column')], null));
+      builder.updateTree(makeNode(9, 'Root', [makeNode(15, 'Column')], null));
       expect(builder.maxId.value).toBe(15);
 
-      builder.updateLayout(makeNode(1, 'LayoutRoot', [makeNode(2, 'Column')], null));
+      builder.updateTree(makeNode(1, 'Root', [makeNode(2, 'Column')], null));
       expect(builder.maxId.value).toBe(15);
     });
   });
@@ -132,8 +135,8 @@ describe('usePageBuilder', () => {
     it('increments maxId and returns the new value', () => {
       const builder = usePageBuilder({
         initialData: makeInitialData({
-          content: makeNode(1, 'Root', [], null),
-          layout: makeNode(2, 'LayoutRoot', [], null),
+          tree: makeNode(1, 'Root', [], null),
+          contentRootId: 1,
           maxId: 7,
         }),
       });
@@ -146,25 +149,21 @@ describe('usePageBuilder', () => {
   });
 
   describe('snapshot and restore', () => {
-    it('restores content, layout, and maxId from a snapshot', () => {
+    it('restores tree, contentRootId, and maxId from a snapshot', () => {
       const builder = usePageBuilder({ initialData: makeInitialData({ maxId: 2 }) });
 
-      const snapContent = makeNode(3, 'Root', [makeNode(6, 'Hero')], null);
-      const snapLayout = makeNode(4, 'LayoutRoot', [makeNode(7, 'Wrapper')], null);
-      builder.updateContent(snapContent);
-      builder.updateLayout(snapLayout);
-      builder.nextId(); // maxId: 8
+      const snapTree = makeNode(3, 'Root', [makeNode(6, 'Hero')], null);
+      builder.updateTree(snapTree);
+      builder.nextId(); // maxId: 12
       const snapshot = builder.getSnapshot();
 
-      builder.updateContent(makeNode(20, 'Root', [makeNode(21, 'Card')], null));
-      builder.updateLayout(makeNode(30, 'LayoutRoot', [makeNode(31, 'Grid')], null));
+      builder.updateTree(makeNode(20, 'Root', [makeNode(31, 'Card')], null));
       builder.nextId();
       expect(builder.maxId.value).toBe(32);
 
       builder.restoreSnapshot(snapshot);
 
-      expect(builder.content.value).toEqual(snapContent);
-      expect(builder.layout.value).toEqual(snapLayout);
+      expect(builder.tree.value).toEqual(snapTree);
       expect(builder.maxId.value).toBe(12);
       expect(builder.isDirty.value).toBe(true);
     });
@@ -184,8 +183,8 @@ describe('usePageBuilder', () => {
     it('throws a standardized error when snapshot shape is invalid', () => {
       const builder = usePageBuilder({ initialData: makeInitialData() });
       const invalidSnapshot = JSON.stringify({
-        content: null,
-        layout: null,
+        tree: null,
+        contentRootId: null,
         maxId: 10,
       });
 
@@ -207,15 +206,14 @@ describe('usePageBuilder', () => {
       });
       const builder = usePageBuilder({ initialData, mode: 'edit' });
 
-      builder.updateContent(makeNode(50, 'Root', [makeNode(55, 'Hero')], null));
-      builder.updateLayout(makeNode(70, 'LayoutRoot', [makeNode(75, 'Row')], null));
+      builder.updateTree(makeNode(50, 'Root', [makeNode(55, 'Hero')], null));
       builder.variables.value = { HERO_TITLE: 'Changed' };
       builder.nextId();
 
       builder.reset();
 
-      expect(builder.content.value).toEqual(initialData.content);
-      expect(builder.layout.value).toEqual(initialData.layout);
+      expect(builder.tree.value).toEqual(initialData.tree);
+      expect(builder.contentRootId.value).toBe(initialData.contentRootId);
       expect(builder.maxId.value).toBe(initialData.maxId);
       expect(builder.variables.value).toEqual(initialData.variables);
       expect(builder.pageData.value).toEqual(initialData);
@@ -225,7 +223,7 @@ describe('usePageBuilder', () => {
   });
 
   describe('dirty flag behavior', () => {
-    it('tracks content/layout changes and clears when restored to baseline', () => {
+    it('tracks tree changes and clears when restored to baseline', () => {
       const builder = usePageBuilder({ initialData: makeInitialData() });
 
       expect(builder.isDirty.value).toBe(false);
@@ -237,7 +235,7 @@ describe('usePageBuilder', () => {
       builder.restoreSnapshot(snapshot);
       expect(builder.isDirty.value).toBe(false);
 
-      builder.updateLayout(makeNode(10, 'LayoutRoot', [makeNode(99, 'Container')], null));
+      builder.updateTree(makeNode(10, 'LayoutRoot', [makeNode(99, 'Container')], null));
       expect(builder.isDirty.value).toBe(true);
 
       builder.restoreSnapshot(snapshot);
@@ -254,17 +252,16 @@ describe('usePageBuilder', () => {
       try {
         const malformed = {
           ...makeInitialData(),
-          content: null,
-          layout: { id: 2, name: '', slot: null, props: {}, children: [] },
+          tree: null,
+          contentRootId: -1,
           maxId: -10,
           variables: { OK: 'yes', BAD: 3 },
         } as unknown as IPageData;
 
         const builder = usePageBuilder({ initialData: malformed });
 
-        expect(builder.content.value.name).toBe('PbSection');
-        expect(builder.layout.value.name).toBe('PbContainer');
-        expect(builder.maxId.value).toBeGreaterThanOrEqual(100);
+        expect(builder.tree.value.name).toBe('PbSection');
+        expect(builder.maxId.value).toBeGreaterThanOrEqual(1);
         expect(builder.variables.value).toEqual({ OK: 'yes' });
       } finally {
         consoleErrorSpy.mockRestore();
@@ -276,7 +273,7 @@ describe('usePageBuilder', () => {
       try {
         const malformed = {
           ...makeInitialData(),
-          content: {
+          tree: {
             id: 1.5,
             name: 'Root',
             slot: null,
@@ -286,8 +283,8 @@ describe('usePageBuilder', () => {
         } as unknown as IPageData;
 
         const builder = usePageBuilder({ initialData: malformed });
-        expect(builder.content.value.name).toBe('PbSection');
-        expect(builder.content.value.id).toBe(1);
+        expect(builder.tree.value.name).toBe('PbSection');
+        expect(builder.tree.value.id).toBe(1);
       } finally {
         consoleErrorSpy.mockRestore();
       }

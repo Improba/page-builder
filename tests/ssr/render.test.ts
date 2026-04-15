@@ -51,7 +51,7 @@ function toDefinition(
   };
 }
 
-function makePageData(content: INode, variables: Record<string, string>): IPageData {
+function makePageData(tree: INode, variables: Record<string, string>): IPageData {
   return {
     meta: {
       id: 'ssr-page-1',
@@ -59,14 +59,8 @@ function makePageData(content: INode, variables: Record<string, string>): IPageD
       url: '/ssr-page',
       status: 'draft',
     },
-    content,
-    layout: {
-      id: 1000,
-      name: 'SsrLayout',
-      slot: null,
-      props: {},
-      children: [],
-    },
+    tree,
+    contentRootId: tree.id,
     maxId: 1000,
     variables,
   };

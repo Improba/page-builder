@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import type { INode } from '@/types/node';
 import { useNodeTree } from '@/composables/use-node-tree';
 
@@ -23,16 +23,17 @@ function makeRoot(): INode {
 }
 
 function setup(initialRoot?: INode) {
-  const content = ref<INode>(initialRoot ?? makeRoot());
+  const tree = ref<INode>(initialRoot ?? makeRoot());
+  const contentRoot = computed(() => tree.value);
   let idCounter = 10;
   const nextId = vi.fn(() => idCounter++);
   const onUpdate = vi.fn((newTree: INode) => {
-    content.value = newTree;
+    tree.value = newTree;
   });
   const onSnapshot = vi.fn();
 
-  const tree = useNodeTree({ content, nextId, onUpdate, onSnapshot });
-  return { content, nextId, onUpdate, onSnapshot, ...tree };
+  const nodeTree = useNodeTree({ tree, contentRoot, contentRootId: tree.value.id, nextId, onUpdate, onSnapshot });
+  return { content: tree, nextId, onUpdate, onSnapshot, ...nodeTree };
 }
 
 describe('useNodeTree', () => {

@@ -103,7 +103,7 @@ describe('IframeCanvas', () => {
   it('selects and hovers nodes inside iframe content', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -140,7 +140,7 @@ describe('IframeCanvas', () => {
   it('opens context menu from iframe and emits context action', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -172,7 +172,7 @@ describe('IframeCanvas', () => {
   it('disables root-only context actions that require a parent position', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -204,7 +204,7 @@ describe('IframeCanvas', () => {
     const postMessageSpy = vi.spyOn(window, 'postMessage');
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -267,7 +267,7 @@ describe('IframeCanvas', () => {
   it('applies restrictive iframe sandbox permissions', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -290,7 +290,7 @@ describe('IframeCanvas', () => {
   it('emits iframe-keydown payload for shortcut handling', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -340,7 +340,7 @@ describe('IframeCanvas', () => {
   it('applies preset/custom viewport sizes and emits measured viewport size', async () => {
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -373,7 +373,7 @@ describe('IframeCanvas', () => {
 
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,
@@ -414,7 +414,7 @@ describe('IframeCanvas', () => {
 
     const wrapper = mount(IframeCanvas, {
       props: {
-        content: contentTree,
+        tree: contentTree,
         variables: {},
         selectedNodeId: null,
         hoveredNodeId: null,

@@ -20,18 +20,20 @@ function makePageData(overrides: Partial<IPageData> = {}): IPageData {
       url: '/validation-test',
       status: 'draft',
     },
-    content: makeNode({
-      id: 1,
-      name: 'PbSection',
-      slot: null,
-      children: [makeNode({ id: 2, name: 'PbText', slot: 'default', props: { tag: 'p' } })],
-    }),
-    layout: makeNode({
+    tree: makeNode({
       id: 100,
       name: 'PbContainer',
       slot: null,
-      children: [],
+      children: [
+        makeNode({
+          id: 1,
+          name: 'PbSection',
+          slot: 'default',
+          children: [makeNode({ id: 2, name: 'PbText', slot: 'default', props: { tag: 'p' } })],
+        }),
+      ],
     }),
+    contentRootId: 1,
     maxId: 100,
     variables: { TITLE: 'Hello' },
     ...overrides,
@@ -267,21 +269,25 @@ describe('validatePageData', () => {
     });
   });
 
-  it('reports duplicate IDs across content and layout trees', () => {
+  it('reports duplicate IDs within the tree', () => {
     const payload = makePageData({
-      layout: makeNode({
+      tree: makeNode({
         id: 1,
         name: 'PbContainer',
         slot: null,
+        children: [
+          makeNode({ id: 1, name: 'PbSection', slot: 'default' }),
+        ],
       }),
-      maxId: 2,
+      contentRootId: 1,
+      maxId: 1,
     });
 
     const result = validatePageData(payload);
 
     expect(result.isValid).toBe(false);
     expect(result.errors).toContainEqual({
-      path: 'layout.id',
+      path: 'tree.children[0].id',
       message: 'Duplicate node id "1" found.',
     });
   });
@@ -309,16 +315,16 @@ describe('validatePageData', () => {
     });
   });
 
-  it('detects cyclic content/layout structures in page payloads', () => {
-    const cyclicContent = makeNode({ id: 1, name: 'Root', slot: null, children: [] });
+  it('detects cyclic tree structures in page payloads', () => {
+    const cyclicTree = makeNode({ id: 1, name: 'Root', slot: null, children: [] });
     const child = makeNode({ id: 2, name: 'Child', slot: 'default', children: [] });
-    cyclicContent.children.push(child);
-    child.children.push(cyclicContent);
+    cyclicTree.children.push(child);
+    child.children.push(cyclicTree);
 
     const result = validatePageData(
       makePageData({
-        content: cyclicContent,
-        layout: makeNode({ id: 100, name: 'PbContainer', slot: null }),
+        tree: cyclicTree,
+        contentRootId: 1,
       }),
     );
 

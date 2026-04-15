@@ -11,20 +11,16 @@ const pageData: IPageData = {
     url: '/page-i18n',
     status: 'draft',
   },
-  content: {
-    id: 1,
-    name: 'PbSection',
-    slot: null,
-    props: {},
-    children: [],
-  },
-  layout: {
+  tree: {
     id: 100,
     name: 'PbContainer',
     slot: null,
     props: {},
-    children: [],
+    children: [
+      { id: 1, name: 'PbSection', slot: 'default', props: {}, children: [] },
+    ],
   },
+  contentRootId: 1,
   maxId: 100,
   variables: {},
 };
