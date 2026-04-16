@@ -25,6 +25,7 @@
   const { t } = usePageBuilderI18n();
   const searchQuery = ref('');
   const treeOpen = ref(true);
+  const collapsedCategories = ref(new Set<string>());
   const DRAWER_CONTENT_ID = 'ipb-left-drawer-content';
   const TREE_PANEL_REGION_ID = 'ipb-left-drawer-tree-panel';
   const drawerRef = ref<HTMLElement | null>(null);
@@ -71,6 +72,20 @@
 
   function toggleTree() {
     treeOpen.value = !treeOpen.value;
+  }
+
+  function toggleCategory(category: string) {
+    const next = new Set(collapsedCategories.value);
+    if (next.has(category)) {
+      next.delete(category);
+    } else {
+      next.add(category);
+    }
+    collapsedCategories.value = next;
+  }
+
+  function isCategoryCollapsed(category: string): boolean {
+    return collapsedCategories.value.has(category);
   }
 
   function getFirstFocusableDrawerControl(): HTMLElement | null {
@@ -175,8 +190,16 @@
           :key="category"
           class="ipb-left-drawer__category"
         >
-          <h4 class="ipb-left-drawer__category-title">{{ category }}</h4>
-          <div class="ipb-left-drawer__component-list" role="group" :aria-label="getCategoryAriaLabel(category)">
+          <button
+            type="button"
+            class="ipb-left-drawer__category-toggle"
+            :aria-expanded="!isCategoryCollapsed(category) ? 'true' : 'false'"
+            @click="toggleCategory(category)"
+          >
+            <span class="ipb-left-drawer__category-chevron" :class="{ 'ipb-left-drawer__category-chevron--collapsed': isCategoryCollapsed(category) }">&#9662;</span>
+            <h4 class="ipb-left-drawer__category-title">{{ category }}</h4>
+          </button>
+          <div v-if="!isCategoryCollapsed(category)" class="ipb-left-drawer__component-list" role="group" :aria-label="getCategoryAriaLabel(category)">
             <button
               v-for="comp in components"
               :key="comp.name"
@@ -336,10 +359,45 @@
     line-height: 1;
   }
 
+  .ipb-left-drawer__category-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 6px 4px;
+    margin: 4px 0 0;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+
+  .ipb-left-drawer__category-toggle:hover {
+    background: var(--ipb-hover-bg, #f5f5f5);
+  }
+
+  .ipb-left-drawer__category-toggle:focus-visible {
+    outline: 2px solid var(--ipb-focus-color, #2563eb);
+    outline-offset: 1px;
+  }
+
+  .ipb-left-drawer__category-chevron {
+    font-size: 10px;
+    line-height: 1;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+
+  .ipb-left-drawer__category-chevron--collapsed {
+    transform: rotate(-90deg);
+  }
+
   .ipb-left-drawer__category-title {
     font-size: 11px;
     font-weight: 600;
-    margin: 10px 0 8px;
+    margin: 0;
   }
 
   .ipb-left-drawer__component-list {

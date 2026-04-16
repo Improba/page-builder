@@ -7,6 +7,21 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-04-16
+
+### Added
+
+- Collapsible component categories in the left drawer palette. Each category
+  heading is now a toggle button with a chevron indicator; categories are
+  expanded by default and can be collapsed to reduce visual clutter.
+
+### Fixed
+
+- Editable zones nested inside readonly parents can be hovered and selected
+  again. The `pointer-events: none` rule on `[data-ipb-readonly]` was blocking
+  all descendant interactions; non-readonly child nodes now re-enable pointer
+  events via an inheritance override.
+
 ## [0.3.2] - 2026-04-16
 
 ### Changed
@@ -61,7 +76,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Built-in component set and Vue plugin integration.
 - Unit/integration test setup, Docker-based developer workflow, and TypeDoc API generation.
 
-[Unreleased]: https://github.com/improba/page-builder/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/improba/page-builder/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/improba/page-builder/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/improba/page-builder/compare/v0.3.1...v0.3.2
 [0.2.3]: https://github.com/improba/page-builder/compare/v0.2.1...v0.2.3
 [0.2.1]: https://github.com/improba/page-builder/compare/v0.1.0...v0.2.1

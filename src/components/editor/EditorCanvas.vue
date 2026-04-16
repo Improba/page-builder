@@ -593,4 +593,10 @@
     pointer-events: none;
     user-select: none;
   }
+
+  .ipb-canvas__content :deep([data-ipb-readonly="true"] [data-ipb-node-id]:not([data-ipb-readonly="true"])) {
+    pointer-events: auto;
+    user-select: auto;
+    opacity: 1;
+  }
 </style>

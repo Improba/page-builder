@@ -330,6 +330,12 @@
         pointer-events: none;
         user-select: none;
       }
+
+      [data-ipb-readonly="true"] [data-ipb-node-id]:not([data-ipb-readonly="true"]) {
+        pointer-events: auto;
+        user-select: auto;
+        opacity: 1;
+      }
     `;
     doc.head.appendChild(styleEl);
   }
