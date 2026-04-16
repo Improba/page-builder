@@ -587,4 +587,10 @@
   .ipb-canvas__content :deep([data-ipb-component="PbRow"]) {
     min-height: 80px;
   }
+
+  .ipb-canvas__content :deep([data-ipb-readonly="true"]) {
+    opacity: 0.8;
+    pointer-events: none;
+    user-select: none;
+  }
 </style>

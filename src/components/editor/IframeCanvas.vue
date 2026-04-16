@@ -326,7 +326,8 @@
       }
 
       [data-ipb-readonly="true"] {
-        opacity: 0.6;
+        opacity: 0.8;
+        pointer-events: none;
         user-select: none;
       }
     `;

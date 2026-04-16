@@ -7,6 +7,19 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-04-16
+
+### Changed
+
+- Reduced readonly zone overlay intensity (`opacity` from `0.6` to `0.8`) so
+  non-editable areas are still visually distinct but less washed-out.
+
+### Fixed
+
+- Readonly zones on the canvas can no longer be selected, hovered, or
+  right-clicked. Added `pointer-events: none` to `[data-ipb-readonly]` elements
+  in both `IframeCanvas` and `EditorCanvas`.
+
 ## [0.2.3] - 2026-04-15
 
 ### Fixed
@@ -48,7 +61,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Built-in component set and Vue plugin integration.
 - Unit/integration test setup, Docker-based developer workflow, and TypeDoc API generation.
 
-[Unreleased]: https://github.com/improba/page-builder/compare/v0.2.3...HEAD
+[Unreleased]: https://github.com/improba/page-builder/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/improba/page-builder/compare/v0.3.1...v0.3.2
 [0.2.3]: https://github.com/improba/page-builder/compare/v0.2.1...v0.2.3
 [0.2.1]: https://github.com/improba/page-builder/compare/v0.1.0...v0.2.1
 [0.1.0]: https://github.com/improba/page-builder/releases/tag/v0.1.0
