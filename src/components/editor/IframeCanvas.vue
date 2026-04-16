@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import {
     computed,
+    getCurrentInstance,
     h,
     inject,
     nextTick,
@@ -74,6 +75,7 @@
   const nodeTree = inject(NODE_TREE_KEY, null);
   const dragDrop = inject(DRAG_DROP_KEY, null);
   const { t } = usePageBuilderI18n();
+  const currentInstance = getCurrentInstance();
 
   const iframeRef = ref<HTMLIFrameElement | null>(null);
   const stageRef = ref<HTMLElement | null>(null);
@@ -347,14 +349,15 @@
 
   function renderIframeNodeTree() {
     if (!contentRef.value) return;
-    render(
-      h(NodeRenderer, {
-        node: props.tree,
-        variables: props.variables,
-        markNodes: true,
-      }),
-      contentRef.value,
-    );
+    const vnode = h(NodeRenderer, {
+      node: props.tree,
+      variables: props.variables,
+      markNodes: true,
+    });
+    if (currentInstance?.appContext) {
+      vnode.appContext = currentInstance.appContext;
+    }
+    render(vnode, contentRef.value);
   }
 
   function unmountIframeNodeTree() {
