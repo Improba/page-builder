@@ -114,6 +114,12 @@
   });
 
   const canvasStyle = computed(() => {
+    if (props.viewport === 'desktop') {
+      return {
+        width: '100%',
+        height: '100%',
+      };
+    }
     return {
       width: `min(100%, ${resolvedViewportDimensions.value.width}px)`,
       height: `${resolvedViewportDimensions.value.height}px`,
@@ -926,7 +932,7 @@
 </script>
 
 <template>
-  <main class="ipb-canvas" @click="handleCanvasClick" @contextmenu.prevent="hideContextMenu">
+  <main class="ipb-canvas" :class="{ 'ipb-canvas--desktop': viewport === 'desktop' }" @click="handleCanvasClick" @contextmenu.prevent="hideContextMenu">
     <div class="ipb-canvas__viewport" :style="canvasStyle">
       <div ref="stageRef" class="ipb-iframe-canvas__stage">
         <iframe
@@ -983,6 +989,10 @@
     background: var(--ipb-canvas-bg, #e5e7eb);
   }
 
+  .ipb-canvas--desktop {
+    padding: 0;
+  }
+
   .ipb-canvas__viewport {
     position: relative;
     flex: 0 0 auto;
@@ -991,6 +1001,11 @@
     border-radius: 4px;
     overflow: hidden;
     transition: width 0.2s ease, height 0.2s ease;
+  }
+
+  .ipb-canvas--desktop .ipb-canvas__viewport {
+    box-shadow: none;
+    border-radius: 0;
   }
 
   .ipb-iframe-canvas__stage {

@@ -481,7 +481,7 @@
 </script>
 
 <template>
-  <main class="ipb-canvas" @click="handleCanvasClick" @contextmenu.prevent="hideContextMenu">
+  <main class="ipb-canvas" :class="{ 'ipb-canvas--desktop': viewport === 'desktop' }" @click="handleCanvasClick" @contextmenu.prevent="hideContextMenu">
     <div class="ipb-canvas__viewport" :style="canvasStyle">
       <div
         ref="contentRef"
@@ -539,12 +539,21 @@
     background: var(--ipb-canvas-bg, #e5e7eb);
   }
 
+  .ipb-canvas--desktop {
+    padding: 0;
+  }
+
   .ipb-canvas__viewport {
     background: #fff;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.06);
     border-radius: 4px;
     overflow: hidden;
     transition: width 0.3s ease, height 0.3s ease;
+  }
+
+  .ipb-canvas--desktop .ipb-canvas__viewport {
+    box-shadow: none;
+    border-radius: 0;
   }
 
   .ipb-canvas__content {
