@@ -115,10 +115,7 @@
 
   const canvasStyle = computed(() => {
     if (props.viewport === 'desktop') {
-      return {
-        width: '100%',
-        height: '100%',
-      };
+      return {};
     }
     return {
       width: `min(100%, ${resolvedViewportDimensions.value.width}px)`,
@@ -991,6 +988,7 @@
 
   .ipb-canvas--desktop {
     padding: 0;
+    align-items: stretch;
   }
 
   .ipb-canvas__viewport {
@@ -1004,6 +1002,7 @@
   }
 
   .ipb-canvas--desktop .ipb-canvas__viewport {
+    flex: 1;
     box-shadow: none;
     border-radius: 0;
   }

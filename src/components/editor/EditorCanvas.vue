@@ -541,6 +541,7 @@
 
   .ipb-canvas--desktop {
     padding: 0;
+    align-items: stretch;
   }
 
   .ipb-canvas__viewport {
@@ -552,6 +553,7 @@
   }
 
   .ipb-canvas--desktop .ipb-canvas__viewport {
+    flex: 1;
     box-shadow: none;
     border-radius: 0;
   }
