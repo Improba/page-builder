@@ -7,6 +7,16 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-04-16
+
+### Changed
+
+- The left drawer "Components" section is now collapsible (like the "Tree"
+  section) via a toggle button in its header.
+- Component categories are collapsed by default to reduce visual clutter.
+  Searching auto-expands matching categories so results remain visible.
+- Removed the redundant drawer title; each section is self-labeled.
+
 ## [0.3.3] - 2026-04-16
 
 ### Added
@@ -76,7 +86,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Built-in component set and Vue plugin integration.
 - Unit/integration test setup, Docker-based developer workflow, and TypeDoc API generation.
 
-[Unreleased]: https://github.com/improba/page-builder/compare/v0.3.3...HEAD
+[Unreleased]: https://github.com/improba/page-builder/compare/v0.3.4...HEAD
+[0.3.4]: https://github.com/improba/page-builder/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/improba/page-builder/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/improba/page-builder/compare/v0.3.1...v0.3.2
 [0.2.3]: https://github.com/improba/page-builder/compare/v0.2.1...v0.2.3

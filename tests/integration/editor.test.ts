@@ -121,7 +121,15 @@ async function updateContentProp(wrapper: VueWrapper, html: string) {
   await nextTick();
 }
 
+async function expandPaletteCategories(wrapper: VueWrapper) {
+  const toggles = wrapper.findAll('.ipb-left-drawer__category-toggle');
+  for (const toggle of toggles) {
+    await toggle.trigger('click');
+  }
+}
+
 async function dragPaletteTextToRoot(wrapper: VueWrapper): Promise<number> {
+  await expandPaletteCategories(wrapper);
   const textItem = wrapper
     .findAll('.ipb-left-drawer__component-item')
     .find((item) => item.text().includes('Text'));
@@ -162,6 +170,7 @@ async function dragPaletteTextToRoot(wrapper: VueWrapper): Promise<number> {
 }
 
 async function clickPaletteTextToRoot(wrapper: VueWrapper): Promise<number> {
+  await expandPaletteCategories(wrapper);
   const textItem = wrapper
     .findAll('.ipb-left-drawer__component-item')
     .find((item) => item.text().includes('Text'));

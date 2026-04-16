@@ -24,8 +24,16 @@
   const categorizedComponents = computed(() => getComponentsByCategory());
   const { t } = usePageBuilderI18n();
   const searchQuery = ref('');
+  const componentsOpen = ref(true);
   const treeOpen = ref(true);
+  const categoriesInitialized = ref(false);
   const collapsedCategories = ref(new Set<string>());
+
+  watch(categorizedComponents, (cats) => {
+    if (categoriesInitialized.value || cats.size === 0) return;
+    categoriesInitialized.value = true;
+    collapsedCategories.value = new Set(cats.keys());
+  }, { immediate: true });
   const DRAWER_CONTENT_ID = 'ipb-left-drawer-content';
   const TREE_PANEL_REGION_ID = 'ipb-left-drawer-tree-panel';
   const drawerRef = ref<HTMLElement | null>(null);
@@ -68,6 +76,10 @@
 
   function handleComponentAdd(componentName: string) {
     emit('add', componentName);
+  }
+
+  function toggleComponents() {
+    componentsOpen.value = !componentsOpen.value;
   }
 
   function toggleTree() {
@@ -150,7 +162,6 @@
     role="complementary"
   >
     <div class="ipb-left-drawer__header">
-      <span class="ipb-left-drawer__title" id="ipb-left-drawer-title">{{ t('leftDrawer.title') }}</span>
       <button
         ref="drawerToggleRef"
         type="button"
@@ -172,55 +183,68 @@
       aria-labelledby="ipb-left-drawer-title"
     >
       <div class="ipb-left-drawer__section">
-        <h3 class="ipb-left-drawer__section-title" id="ipb-left-drawer-components-title">
-          {{ t('leftDrawer.section.components') }}
-        </h3>
-        <div class="ipb-left-drawer__search" role="search">
-          <input
-            ref="searchInputRef"
-            v-model="searchQuery"
-            type="search"
-            class="ipb-left-drawer__search-input"
-            :placeholder="t('leftDrawer.search.placeholder')"
-            :aria-label="t('leftDrawer.search.ariaLabel')"
-          />
-        </div>
-        <div
-          v-for="[category, components] in filteredCategorizedComponents"
-          :key="category"
-          class="ipb-left-drawer__category"
-        >
+        <div class="ipb-left-drawer__section-header">
+          <h3 class="ipb-left-drawer__section-title" id="ipb-left-drawer-components-title">
+            {{ t('leftDrawer.section.components') }}
+          </h3>
           <button
             type="button"
-            class="ipb-left-drawer__category-toggle"
-            :aria-expanded="!isCategoryCollapsed(category) ? 'true' : 'false'"
-            @click="toggleCategory(category)"
+            class="ipb-left-drawer__section-toggle"
+            :aria-expanded="componentsOpen ? 'true' : 'false'"
+            :aria-label="t('leftDrawer.section.components')"
+            @click="toggleComponents"
           >
-            <span class="ipb-left-drawer__category-chevron" :class="{ 'ipb-left-drawer__category-chevron--collapsed': isCategoryCollapsed(category) }">&#9662;</span>
-            <h4 class="ipb-left-drawer__category-title">{{ category }}</h4>
+            {{ componentsOpen ? '−' : '+' }}
           </button>
-          <div v-if="!isCategoryCollapsed(category)" class="ipb-left-drawer__component-list" role="group" :aria-label="getCategoryAriaLabel(category)">
-            <button
-              v-for="comp in components"
-              :key="comp.name"
-              type="button"
-              class="ipb-left-drawer__component-item"
-              draggable="true"
-              :title="comp.description"
-              :aria-label="getDragAriaLabel(comp.label)"
-              :aria-keyshortcuts="'Enter Space'"
-              @click="handleComponentAdd(comp.name)"
-              @dragstart="handleDragStart(comp.name, $event)"
-              @dragend="handleDragEnd"
-            >
-              <PbIcon class="ipb-left-drawer__component-icon" :icon="comp.icon" aria-hidden="true" />
-              <span class="ipb-left-drawer__component-label">{{ comp.label }}</span>
-            </button>
-          </div>
         </div>
-        <p v-if="filteredCategorizedComponents.size === 0" class="ipb-left-drawer__empty">
-          {{ t('leftDrawer.empty') }}
-        </p>
+        <template v-if="componentsOpen">
+          <div class="ipb-left-drawer__search" role="search">
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              type="search"
+              class="ipb-left-drawer__search-input"
+              :placeholder="t('leftDrawer.search.placeholder')"
+              :aria-label="t('leftDrawer.search.ariaLabel')"
+            />
+          </div>
+          <div
+            v-for="[category, components] in filteredCategorizedComponents"
+            :key="category"
+            class="ipb-left-drawer__category"
+          >
+            <button
+              type="button"
+              class="ipb-left-drawer__category-toggle"
+              :aria-expanded="!isCategoryCollapsed(category) ? 'true' : 'false'"
+              @click="toggleCategory(category)"
+            >
+              <span class="ipb-left-drawer__category-chevron" :class="{ 'ipb-left-drawer__category-chevron--collapsed': isCategoryCollapsed(category) }">&#9662;</span>
+              <h4 class="ipb-left-drawer__category-title">{{ category }}</h4>
+            </button>
+            <div v-if="!isCategoryCollapsed(category) || searchQuery.trim()" class="ipb-left-drawer__component-list" role="group" :aria-label="getCategoryAriaLabel(category)">
+              <button
+                v-for="comp in components"
+                :key="comp.name"
+                type="button"
+                class="ipb-left-drawer__component-item"
+                draggable="true"
+                :title="comp.description"
+                :aria-label="getDragAriaLabel(comp.label)"
+                :aria-keyshortcuts="'Enter Space'"
+                @click="handleComponentAdd(comp.name)"
+                @dragstart="handleDragStart(comp.name, $event)"
+                @dragend="handleDragEnd"
+              >
+                <PbIcon class="ipb-left-drawer__component-icon" :icon="comp.icon" aria-hidden="true" />
+                <span class="ipb-left-drawer__component-label">{{ comp.label }}</span>
+              </button>
+            </div>
+          </div>
+          <p v-if="filteredCategorizedComponents.size === 0" class="ipb-left-drawer__empty">
+            {{ t('leftDrawer.empty') }}
+          </p>
+        </template>
       </div>
 
       <div v-if="content" class="ipb-left-drawer__section ipb-left-drawer__section--tree">
@@ -265,20 +289,10 @@
   .ipb-left-drawer__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    justify-content: flex-end;
     min-width: 0;
-    padding: 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--ipb-border-color, #e0e0e0);
-  }
-
-  .ipb-left-drawer__title {
-    font-weight: 600;
-    font-size: 14px;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .ipb-left-drawer__toggle {

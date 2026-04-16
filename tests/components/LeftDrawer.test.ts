@@ -36,6 +36,7 @@ describe('LeftDrawer', () => {
         open: true,
       },
     });
+    await wrapper.find('.ipb-left-drawer__category-toggle').trigger('click');
     const item = wrapper.find('.ipb-left-drawer__component-item');
     const setData = vi.fn();
     const dataTransfer = {
@@ -57,6 +58,7 @@ describe('LeftDrawer', () => {
         open: true,
       },
     });
+    await wrapper.find('.ipb-left-drawer__category-toggle').trigger('click');
     const item = wrapper.find('.ipb-left-drawer__component-item');
 
     await item.trigger('dragend');
@@ -70,6 +72,7 @@ describe('LeftDrawer', () => {
         open: true,
       },
     });
+    await wrapper.find('.ipb-left-drawer__category-toggle').trigger('click');
     const item = wrapper.find('.ipb-left-drawer__component-item');
 
     await item.trigger('click');
@@ -107,7 +110,11 @@ describe('LeftDrawer', () => {
     expect(drawerToggle.attributes('aria-expanded')).toBe('true');
     expect(drawerToggle.attributes('aria-controls')).toBe('ipb-left-drawer-content');
 
-    const treeToggle = wrapper.get('.ipb-left-drawer__section-toggle');
+    const sectionToggles = wrapper.findAll('.ipb-left-drawer__section-toggle');
+    const componentsToggle = sectionToggles[0];
+    const treeToggle = sectionToggles[1];
+
+    expect(componentsToggle.attributes('aria-expanded')).toBe('true');
     expect(treeToggle.attributes('aria-expanded')).toBe('true');
     expect(treeToggle.attributes('aria-controls')).toBe('ipb-left-drawer-tree-panel');
 
